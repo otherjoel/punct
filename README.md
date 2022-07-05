@@ -18,7 +18,20 @@ other than code comments.
 
 [2]: https://lexi-lambda.github.io/racket-commonmark/
 
-**Example syntax:**
+### Installation and Use
+
+Clone the repository, and from within the `punct/` directory, do `raco pkg install --link punct-lib/` (note the trailing slash).
+
+Once this is done, try it out using `#lang punct` at the top of your Racket files. Running a Punct program directly will print out its AST.
+
+### Road Map
+
+- [ ] Finish the HTML renderer
+- [ ] Add markup/functions
+- [ ] Benchmarks, caching, other optimizations
+- [ ] [Scribble][] documentation
+
+### Example syntax
 
 ```
   #lang punct "my-additional-tags.rkt"
@@ -54,3 +67,5 @@ other than code comments.
  ［ftw]: https://surly.guy/fight-to-win/ 'Book website'
 
  ```
+
+[Scribble]: https://docs.racket-lang.org/scribble/index.html
