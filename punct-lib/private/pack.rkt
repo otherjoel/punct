@@ -7,6 +7,7 @@
          racket/list
          racket/match
          racket/string
+         racket/symbol
          xml)
 
 #| Flatpacking
@@ -60,25 +61,41 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 (define (push/first v lst) (cons (cons v (car lst)) (cdr lst)))
 (define (push/rest v lst) (cons (cons v (cadr lst)) (cddr lst)))
 
-(define (make-open/close-tags tag attrs)
-  (let* ([strs (string-split (xexpr->string `(,tag ,attrs)) "><")]
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; We “mark” symbolic expressions by prefixing them, to keep them distinct from
+;; any HTML strings originally present in the document.
+
+(define mark-prefix "P1")
+(define mark-html-regex (regexp (string-append "<(?:/|)" mark-prefix ".*")))
+
+;; 'tag 
+(define (mark-tag t) (string->symbol (format "~a~a" mark-prefix t)))
+(define (unmark-tag t) (string->symbol (string-trim (symbol->immutable-string t) mark-prefix #:right? #f)))
+
+(define (make-open/close-html-tags tag attrs)
+  (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
          [opener (string-append (car strs) ">")]
          [closer (string-append "<" (cadr strs))])
     (values opener closer)))
 
 ;; Convert a tagged s-expression to a flat string
-(define (flatpack xpr)
+(define (flatpack v)
   (cond
-    [(string? xpr) xpr]
-    [else
-     (define-values (tag attrs elems) (tsexpr->values xpr))
-     (define-values (tag-open tag-close) (make-open/close-tags tag attrs))
+    [(string? v) v]
+    [(or (symbol? v) (number? v) (boolean? v) (char? v) (path? v)) (format "~a" v)]
+    [(or (null? v) (void? v)) ""]
+    [(and (list? v) (symbol? (car v)))
+     (define-values (tag attrs elems) (tsexpr->values v))
+     (define-values (tag-open tag-close) (make-open/close-html-tags tag attrs))
      (define block-delim (if (assoc 'block attrs eq?) "\n\n" ""))
-     (apply string-append `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]))
-
+     (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]
+    [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
+    [else (format "~v" v)]))
+  
 (define (html-delim? v)
-  (and (list? v)
-       (member (car v) '(html html-block))))
+  (match v
+    [(list (or 'html 'html-block) (regexp mark-html-regex)) #t]
+    [_ #f]))
 
 ;; Return #t upon matching, e.g. '(html "<a href=\"...\"\>") and '(html "</a>")
 (define (html-delimiter-match? open close)
@@ -88,11 +105,12 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 ;; Synthesize a closing 'html x-expression for a given opening one
 ;; '(html "<a href='1.html'>) → '(html "</a>")
 (define (synthesize-closer opener)
-  (list 'html (format "</~a>" (cadr (regexp-match #rx"<([a-zA-Z]+)[ |>]" (cadr opener))))))
+  (list 'html (format "</~a>" (cadr (regexp-match #rx"<([a-zA-Z0-9]+)[ |>]" (cadr opener))))))
 
 (define (assemble-sexpr opener maybe-closer elems)
   (define closer (or maybe-closer (synthesize-closer opener)))
-  (define-values (tag attrs e) (tsexpr->values (string->xexpr (string-append (cadr opener) (cadr closer)))))
+  (define-values (ptag attrs e) (tsexpr->values (string->xexpr (string-append (cadr opener) (cadr closer)))))
+  (define tag (unmark-tag ptag))
   ;; if this is a block-expression and the only element is a paragraph, shuck the paragraph
   (define new-elems
     (if (and (assoc 'block attrs eq?)
@@ -104,6 +122,9 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
   (define new-attrs (filter-not (λ (v) (eq? 'block (car v))) attrs))
   `(,tag ,@(if (null? new-attrs) '() (list new-attrs)) ,@new-elems))
 
+
+;; Performs Step 4 above: reassembling s-expressions within nested lists by
+;; using HTML delimiters as delimiters.
 (define (reassemble-sexprs v)
   (cond
     [(not (list? v)) v]
@@ -138,7 +159,6 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
                 (cons opener in-tags)
                 (cons '() inside))]
          [(list* (? html-delim? orphaned) remaining)
-          (writeln (format "orphan: ~a" orphaned))
           (loop accum remaining in-tags inside)]
          ; first elem is a non-delimiter value and we are inside a tag
          [(list* v remaining)

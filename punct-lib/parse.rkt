@@ -80,11 +80,8 @@ after rendering a single document.
     (super-new)))
 
 (define (string->punct-doc str #:who [who 'string->punct-doc])
-  ; CommonMark parsing pass
   (define intermediate-doc (string->document str)) 
   (when (punct-debug) (displayln intermediate-doc))
-
-  ; Convert CommonMark struct to Punct struct and “unflatpack”.
   (send (new cm/punct-render% [doc intermediate-doc] [who who]) render-document))
 
 
@@ -95,7 +92,7 @@ after rendering a single document.
                                #:extract-inline? [extract-inline? #t]
                                #:parse-footnotes? [parse-fn? #f])
   ; “Flatpack” and “Concatenate” steps
-  (define doc-string (splice/filter/pack elems))
+  (define doc-string (apply string-append (map flatpack (splice elems))))
 
   ;; CommonMark parsing and “Unflatpack” steps
   (define doc
@@ -121,19 +118,3 @@ after rendering a single document.
            (proc (loop x)))
          x)
         x)))
-
-;; Given a list of elements, removes empty lists and voids, splices the cdr
-;; of any list beginning with the splicing tag into its surrounding lists,
-;; converts all non-string element into serialized strings (including
-;; “Flatpacking” — see pack.rkt), and concatenates the results into a single
-;; string.
-(define (splice/filter/pack lst)
-  (apply string-append
-         (for/list ([v (in-list (splice lst))]
-                    #:unless (or (null? v) (void? v)))
-           (cond
-             [(string? v) v]
-             [(or (symbol? v) (number? v) (boolean? v) (char? v) (path? v)) (format "~a" v)]
-             [(and (list? v) (symbol? (car v))) (flatpack v)]
-             [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
-             [else (format "~v" v)]))))
