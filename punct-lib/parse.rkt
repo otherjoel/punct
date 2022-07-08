@@ -15,7 +15,8 @@
          racket/list
          racket/match)
 
-(provide punct-debug parse-markup-elements)
+(provide punct-debug
+         parse-markup-elements)
 
 (define punct-debug (make-parameter #f))
 
@@ -42,6 +43,7 @@ after rendering a single document.
     (define/override (render-document)
       (define-values [body footnotes] (super render-document))
       (document (reassemble-sexprs body) (reassemble-sexprs footnotes)))
+    
     (define/override (render-thematic-break)
       '(thematic-break))
     (define/override (render-heading content level)
@@ -78,9 +80,13 @@ after rendering a single document.
     (super-new)))
 
 (define (string->punct-doc str #:who [who 'string->punct-doc])
-  (define intermediate-doc (string->document str))
+  ; CommonMark parsing pass
+  (define intermediate-doc (string->document str)) 
   (when (punct-debug) (displayln intermediate-doc))
+
+  ; Convert CommonMark struct to Punct struct and “unflatpack”.
   (send (new cm/punct-render% [doc intermediate-doc] [who who]) render-document))
+
 
 ;; Processes a list of elements into an punct document struct. If
 ;; extract-inline? is #t and the resulting doc contains only a single paragraph
@@ -88,10 +94,14 @@ after rendering a single document.
 (define (parse-markup-elements elems
                                #:extract-inline? [extract-inline? #t]
                                #:parse-footnotes? [parse-fn? #f])
+  ; “Flatpack” and “Concatenate” steps
   (define doc-string (splice/filter/pack elems))
+
+  ;; CommonMark parsing and “Unflatpack” steps
   (define doc
     (parameterize ([current-parse-footnotes? parse-fn?])
       (string->punct-doc doc-string #:who 'parse-markup-elements)))
+  
   (if extract-inline?
       (match doc
         [(document `((paragraph ,content)) '()) `(,punct-splicing-tag ,content)]
@@ -107,21 +117,22 @@ after rendering a single document.
     (if (list? x)
         (append-map
          (λ (x)
-           (define proc (if (and (list? x) (eq? punct-splicing-tag (car x))) rest list))
+           (define proc (if (and (list? x) (not (null? x)) (eq? punct-splicing-tag (car x))) rest list))
            (proc (loop x)))
          x)
         x)))
 
-;; Given a list of elements, removes and voids or empty strings, splices the cdr
+;; Given a list of elements, removes empty lists and voids, splices the cdr
 ;; of any list beginning with the splicing tag into its surrounding lists,
-;; converts all non-string element into serialized strings, and returns the
-;; resulting list concatenated into a single string.
+;; converts all non-string element into serialized strings (including
+;; “Flatpacking” — see pack.rkt), and concatenates the results into a single
+;; string.
 (define (splice/filter/pack lst)
   (apply string-append
-         (for/list ([v (in-list (splice lst))])
+         (for/list ([v (in-list (splice lst))]
+                    #:unless (or (null? v) (void? v)))
            (cond
              [(string? v) v]
-             [(or (null? v) (void? v)) ""]
              [(or (symbol? v) (number? v) (boolean? v) (char? v) (path? v)) (format "~a" v)]
              [(and (list? v) (symbol? (car v))) (flatpack v)]
              [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]

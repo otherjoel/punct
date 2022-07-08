@@ -9,8 +9,7 @@
                      racket/base)
          (prefix-in doclang: "doclang-raw.rkt")
          "../core.rkt"
-         "../parse.rkt"
-         racket/class)
+         "../parse.rkt")
 
 (provide punct-debug
          (except-out (all-from-out racket/base) #%module-begin)
@@ -29,6 +28,7 @@
                    [ALL-DEFINED (datum->syntax stx '(all-defined-out))])
        #'(doclang:#%module-begin
           DOC
+          ; Function to run after all expressions are evaluated
           (λ (xprs)
             (begin0 (parse-markup-elements xprs #:extract-inline? #f #:parse-footnotes? #t)
                     (set! METAS (current-metas))
@@ -36,6 +36,6 @@
           (require CORE EXTRA-MODULES ...)
           (provide ALL-DEFINED)
           (define METAS (hasheq METAS-KVS ...))
-          (define PREV-METAS (current-metas))
+          (define PREV-METAS (current-metas))  ; This parameter might have a value before running this module!
           (current-metas METAS)
           EXPRS ...))]))
