@@ -9,11 +9,7 @@
          "base.rkt"
          net/uri-codec
          racket/class
-         racket/string
-         racket/port
-         (only-in xml display-xml/content
-                  empty-tag-shorthand
-                  xexpr->xml))
+         (only-in xml xexpr->string))
 
 (provide doc->html)
 
@@ -60,7 +56,7 @@
     (define/override (render-footnote-reference label defnum refnum)
       `(sup (a [[href ,(string-append "#" (fn-def-anchor label))]
                 [id ,(fn-ref-anchor label refnum)]]
-               ,defnum)))
+               ,(number->string defnum))))
 
     (define/override (render-footnote-definition label refcount elems)
       `(li [[id ,(fn-def-anchor label)]]
@@ -78,13 +74,7 @@
     (super-new)))
 
 (define (doc->html doc)
-  (string-trim
-   (with-output-to-string
-     (λ ()
-       (parameterize ([empty-tag-shorthand 'always])
-         (display-xml/content (xexpr->xml (send (new punct-html-render% [doc doc]) render-document))
-                              #:indentation 'peek))))
-   #:right? #f))
+  (xexpr->string (send (new punct-html-render% [doc doc]) render-document)))
 
 #|   
     [(txexpr 'poetry attrs elems) (render-poetry attrs elems)]
