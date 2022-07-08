@@ -12,7 +12,7 @@
            syntax/strip-context)
   (provide get-info (rename-out [*read-syntax read-syntax]))
 
-  (define read-pollen-syntax
+  (define read-punct-syntax
     (make-at-reader #:command-char punct-command-char
                     #:syntax? #t
                     #:inside? #t))
@@ -24,19 +24,19 @@
     (define extra-modules (read-line-modpaths name inport))
     (define meta-kvs
       `(',punct-here-path-key ,source-path ,@(or (read-metas-block name inport) '())))
-    (define exprs (read-pollen-syntax name inport))
+    (define exprs (read-punct-syntax name inport))
 
     (strip-context
      #`(module runtime-wrapper racket/base
          (module configure-runtime racket/base
            (require punct/private/configure-runtime)
            (current-top-path #,source-path))
-         (module pmain punct/private/main
+         (module _punct-main punct/private/main
            #,meta-kvs
            #,extra-modules
            #,@exprs)
-         (require 'pmain (only-in punct/private/configure-runtime show))
-         (provide (all-from-out 'pmain))
+         (require '_punct-main (only-in punct/private/configure-runtime show))
+         (provide (all-from-out '_punct-main))
          (show #,punct-doc-id #,source-path))))
   
   (define (get-info port src-mod src-line src-col src-pos)
