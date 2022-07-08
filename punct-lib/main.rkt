@@ -49,15 +49,7 @@
            [(procedure? maybe-lexer) (maybe-lexer #:command-char punct-command-char)]
            [else default])]
         [(drracket:indentation)
-         (λ (text pos)
-           (define line-idx (send text position-line pos))
-           (define line-start-pos (send text line-start-position line-idx))
-           (define line-end-pos (send text line-end-position line-idx))
-           (define first-vis-pos
-             (or
-              (for/first ([pos (in-range line-start-pos line-end-pos)]
-                          #:unless (char-blank? (send text get-character pos)))
-                pos)
-              line-start-pos))
-           (- first-vis-pos line-start-pos))]
+         (with-handlers ([exn:missing-module?
+                        (λ (x) (default key default))])
+           (dynamic-require 'scribble/private/indentation 'determine-spaces))]
         [else default]))))
