@@ -9,8 +9,13 @@
          "base.rkt"
          net/uri-codec
          racket/class
-         racket/match
-         (only-in xml xexpr->string))
+         racket/string
+         racket/port
+         (only-in xml display-xml/content
+                  empty-tag-shorthand
+                  xexpr->xml))
+
+(provide doc->html)
 
 (define punct-html-render%
   (class punct-abstract-render%
@@ -73,7 +78,13 @@
     (super-new)))
 
 (define (doc->html doc)
-  (xexpr->string (send (new punct-html-render% [doc doc]) render-document)))
+  (string-trim
+   (with-output-to-string
+     (λ ()
+       (parameterize ([empty-tag-shorthand 'always])
+         (display-xml/content (xexpr->xml (send (new punct-html-render% [doc doc]) render-document))
+                              #:indentation 'peek))))
+   #:right? #f))
 
 #|   
     [(txexpr 'poetry attrs elems) (render-poetry attrs elems)]
