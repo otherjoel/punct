@@ -4,10 +4,12 @@
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 
 (require "tsexp.rkt"
+         racket/format
          racket/list
          racket/match
          racket/string
          racket/symbol
+         threading
          xml)
 
 #| Flatpacking
@@ -25,7 +27,7 @@ later. Here the transformation is the CommonMark parsing step.
 |> A blockquote          | String         |> A blockquote             |         
 |                        | content        |                           |         
 +------------------------+                |<attrib block="yes">       | String   
-|'(attrib [[block "yes"]]|         ===>   |                           | content  
+|'(attrib [[block "yes"]]|         → → →  |                           | content  
 |  "Buster Jones[^1]")   | List           |Buster Jones[^1]           |         
 +------------------------+                |                           |         
 |                        |                |</attrib>                  |         
@@ -66,16 +68,19 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 ;; any HTML strings originally present in the document.
 
 (define mark-prefix "P1")
-(define mark-html-regex (regexp (string-append "<(?:/|)" mark-prefix ".*")))
+(define mark-html-regex (regexp (~a "<(?:/|)" mark-prefix ".*")))
 
 ;; 'tag 
-(define (mark-tag t) (string->symbol (format "~a~a" mark-prefix t)))
-(define (unmark-tag t) (string->symbol (string-trim (symbol->immutable-string t) mark-prefix #:right? #f)))
+(define (mark-tag t) (string->symbol (~a mark-prefix t)))
+(define (unmark-tag t)
+  (~> (symbol->immutable-string t)
+      (string-trim mark-prefix #:right? #f)
+      string->symbol))
 
 (define (make-open/close-html-tags tag attrs)
   (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
-         [opener (string-append (car strs) ">")]
-         [closer (string-append "<" (cadr strs))])
+         [opener (~a (car strs) ">")]
+         [closer (~a "<" (cadr strs))])
     (values opener closer)))
 
 ;; Convert a tagged s-expression to a flat string
@@ -91,7 +96,8 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
      (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]
     [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
     [else (format "~v" v)]))
-  
+
+;; Return #t if v is a marked html delimiter
 (define (html-delim? v)
   (match v
     [(list (or 'html 'html-block) (regexp mark-html-regex)) #t]
@@ -131,44 +137,50 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
     [else
      (let loop ([accum '()]
                 [remain v]
-                [in-tags '()]
-                [inside '()])
+                [tag-stack '()]
+                [nested-tag-stacks '()])
        (match remain
          ['()
-          (if (null? in-tags)
+          (if (null? tag-stack)
               (reverse accum)
-              (loop (cons (assemble-sexpr (car in-tags) #f (reverse (car inside))) accum)
+              (loop (cons (assemble-sexpr (car tag-stack) #f (reverse (car nested-tag-stacks))) accum)
                     remain
-                    (cdr in-tags)
-                    (cdr inside)))]
-         ; first elem is delimiter and matches current tag
+                    (cdr tag-stack)
+                    (cdr nested-tag-stacks)))]
+         
+         ; next elem is delimiter and matches current tag
          [(list* (? html-delim? closer) remaining)
-          #:when (and (not (null? in-tags)) (html-delimiter-match? (car in-tags) closer))
-          (define closed-lst (assemble-sexpr (car in-tags) closer (reverse (car inside))))
-          (define nested? (not (null? (cdr in-tags))))
+          #:when (and (not (null? tag-stack)) (html-delimiter-match? (car tag-stack) closer))
+          (define closed-lst (assemble-sexpr (car tag-stack) closer (reverse (car nested-tag-stacks))))
+          (define nested? (not (null? (cdr tag-stack))))
           (loop (if nested? accum (cons closed-lst accum))
                 remaining
-                (cdr in-tags)
-                (if nested? (push/rest closed-lst inside) inside))]
+                (cdr tag-stack)
+                (if nested? (push/rest closed-lst nested-tag-stacks) nested-tag-stacks))]
 
-         ; first elem is delimiter (& not a closing tag) → start a new list
+         ; next elem is delimiter (& not a closing tag) → start a new list
          [(list* (? html-delim? opener) remaining)
           #:when (not (equal? "/" (substring (cadr opener) 1 2))) ;
           (loop accum
                 remaining
-                (cons opener in-tags)
-                (cons '() inside))]
+                (cons opener tag-stack)
+                (cons '() nested-tag-stacks))]
+
+         ; next elem is a closing delimiter that had no opener (= no-op)
          [(list* (? html-delim? orphaned) remaining)
-          (loop accum remaining in-tags inside)]
-         ; first elem is a non-delimiter value and we are inside a tag
+          (loop accum remaining tag-stack nested-tag-stacks)]
+         
+         ; next elem is a non-delimiter value and we are inside a tag
          [(list* v remaining)
-          #:when (not (null? in-tags))
+          #:when (not (null? tag-stack))
           (loop accum
                 remaining
-                in-tags
-                (push/first (reassemble-sexprs v) inside))]
+                tag-stack
+                (push/first (reassemble-sexprs v) nested-tag-stacks))]
+
+         ; next elem is a non-delimiter value and we aren’t in a tag
          [(list* v remaining)
           (loop (cons (reassemble-sexprs v) accum)
                 remaining
-                in-tags
-                inside)]))]))
+                tag-stack
+                nested-tag-stacks)]))]))

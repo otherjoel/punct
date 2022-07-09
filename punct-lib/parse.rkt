@@ -13,7 +13,8 @@
          "private/pack.rkt"
          racket/class
          racket/list
-         racket/match)
+         racket/match
+         threading)
 
 (provide punct-debug
          parse-markup-elements)
@@ -91,24 +92,20 @@ after rendering a single document.
 (define (parse-markup-elements elems
                                #:extract-inline? [extract-inline? #t]
                                #:parse-footnotes? [parse-fn? #f])
-  ; “Flatpack” and “Concatenate” steps
-  (define doc-string (apply string-append (map flatpack (splice elems))))
-
-  ;; CommonMark parsing and “Unflatpack” steps
   (define doc
     (parameterize ([current-parse-footnotes? parse-fn?])
-      (string->punct-doc doc-string #:who 'parse-markup-elements)))
+      (~> (splice elems)
+          (map flatpack _)
+          (apply string-append _)
+          (string->punct-doc #:who 'parse-markup-elements))))
   
   (if extract-inline?
       (match doc
         [(document `((paragraph ,content)) '()) `(,punct-splicing-tag ,content)]
         [_ doc])
       doc))
-
-;;
-;; ~~ Private helpers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-;;
-
+ 
+;; '(1 (@ 2 (3 4)) 5) → '(1 2 (3 4) 5)
 (define (splice x)
   (let loop ([x x])
     (if (list? x)
