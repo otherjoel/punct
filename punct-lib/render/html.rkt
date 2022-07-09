@@ -9,6 +9,10 @@
          "base.rkt"
          net/uri-codec
          racket/class
+         racket/format
+         racket/list
+         racket/match
+         threading
          (only-in xml xexpr->string))
 
 (provide doc->html)
@@ -22,7 +26,7 @@
           `(article ,@body (section [[class "footnotes"]] (ol ,@footnotes)))))
     
     (define/override (render-heading level elems)
-      (define tag (string->symbol (format "h~a" level)))
+      (define tag (string->symbol (~a "h" level)))
       `(,tag ,@elems))
     
     (define/override (render-thematic-break)
@@ -32,12 +36,12 @@
     (define/override (render-blockquote blocks)
       `(blockquote ,@blocks))
     (define/override (render-code-block info elems)
-      `(pre (code ,@(if info `(((info ,(format "language-~a" info)))) '()) ,@elems)))
+      `(pre (code ,@(if info `(((info ,(~a "language-" info)))) '()) ,@elems)))
     
     (define/override (render-itemization style start elems)
       (if (not start)
           `(ul ,@elems)
-          `(ol [[start ,(format "~a" start)]] ,@elems)))
+          `(ol [[start ,(~a start)]] ,@elems)))
     (define/override (render-item elems) `(li ,@elems))
     (define/override (render-bold elems) `(b ,@elems))
     (define/override (render-italic elems) `(i ,@elems))
@@ -54,18 +58,29 @@
       `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))
     
     (define/override (render-footnote-reference label defnum refnum)
-      `(sup (a [[href ,(string-append "#" (fn-def-anchor label))]
+      `(sup (a [[href ,(~a "#" (fn-def-anchor label))]
                 [id ,(fn-ref-anchor label refnum)]]
                ,(number->string defnum))))
 
     (define/override (render-footnote-definition label refcount elems)
+      (define backrefs
+        (~> (for/list ([n (in-range refcount)])
+              (define refnum (add1 n))
+              (define title (~a "Jump to reference"
+                                   (if (> refcount 1) (format " (~a)" refnum) "")))
+              `(a [[class "footnote-backref"]
+                   [href ,(~a "#" (fn-ref-anchor label refnum))]
+                   [title ,title]
+                   [aria-label ,title]]
+                  "↩"
+                  ,@(if (> refcount 1) `((sup ,(~a refnum))) '())))
+            (add-between " ")
+            (cons " " _)))
       `(li [[id ,(fn-def-anchor label)]]
-           ,@elems
-           " "
-           ,@(for/list ([ref (in-range refcount)])
-               `(a [[href ,(string-append "#" (fn-ref-anchor label (add1 ref)))]]
-                   "↩"))))
-
+           ,@(match elems
+               [(list blocks ... (list 'p inline ...)) `(,@blocks (p ,@inline ,@backrefs))]
+               [_ (append elems backrefs)])))
+           
     (define/public (fn-ref-anchor label refnum)
       (format "fnref_~a_~a" (uri-path-segment-encode label) refnum))
     (define/public (fn-def-anchor label)
