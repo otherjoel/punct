@@ -9,8 +9,9 @@
          (prefix-in cm: commonmark/struct)
          commonmark/private/render
          "private/constants.rkt"
-         "private/struct.rkt"
          "private/pack.rkt"
+         "private/struct.rkt"
+         "private/tsexp.rkt"
          racket/class
          racket/list
          racket/match
@@ -43,8 +44,8 @@ after rendering a single document.
   (class abstract-render%
     (define/override (render-document)
       (define-values [body footnotes] (super render-document))
-      (document (reassemble-sexprs body) (reassemble-sexprs footnotes)))
-    
+      (document (decode-single-blocks (reassemble-sexprs body))
+                (decode-single-blocks (reassemble-sexprs footnotes))))
     (define/override (render-thematic-break)
       '(thematic-break))
     (define/override (render-heading content level)
@@ -115,3 +116,18 @@ after rendering a single document.
            (proc (loop x)))
          x)
         x)))
+
+;; '(paragraph (tag [[block "single"]] "hi")) → '(tag "hi")
+(define (decode-single-blocks lst)
+  (let loop ([x lst])
+    (match x
+      [(list 'paragraph (list (? symbol? tag) (list-no-order (list 'block blocktype) attrs ...) elems ...))
+       #:when (equal? blocktype punct-block-single)
+       `(,tag ,@(if (null? attrs) '() (list attrs)) ,@(map decode-single-blocks elems))]
+      [(list* (? symbol? tag) (list (? attr? attrs) ...) elems)
+       `(,tag ,attrs ,@(map decode-single-blocks elems))]
+      [(list* (? symbol? tag) elems)
+       `(,tag ,@(map decode-single-blocks elems))]
+      [(? list?)
+       (map decode-single-blocks x)]
+      [_ x])))

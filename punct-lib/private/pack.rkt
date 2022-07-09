@@ -3,7 +3,8 @@
 ; SPDX-License-Identifier: BlueOak-1.0.0
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 
-(require "tsexp.rkt"
+(require "constants.rkt"
+         "tsexp.rkt"
          racket/format
          racket/list
          racket/match
@@ -80,8 +81,9 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 (define (make-open/close-html-tags tag attrs)
   (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
          [opener (~a (car strs) ">")]
-         [closer (~a "<" (cadr strs))])
-    (values opener closer)))
+         [closer (~a "<" (cadr strs))]
+         [block-delim (if (equal? (attr-ref attrs 'block) punct-block-multi) "\n\n" "")])
+    (values opener closer block-delim)))
 
 ;; Convert a tagged s-expression to a flat string
 (define (flatpack v)
@@ -91,8 +93,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
     [(or (null? v) (void? v)) ""]
     [(and (list? v) (symbol? (car v)))
      (define-values (tag attrs elems) (tsexpr->values v))
-     (define-values (tag-open tag-close) (make-open/close-html-tags tag attrs))
-     (define block-delim (if (assoc 'block attrs eq?) "\n\n" ""))
+     (define-values (tag-open tag-close block-delim) (make-open/close-html-tags tag attrs))
      (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]
     [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
     [else (format "~v" v)]))
@@ -125,7 +126,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
              (eq? (caar elems) 'paragraph))
         (cdr (car elems))     
         elems))
-  (define new-attrs (filter-not (λ (v) (eq? 'block (car v))) attrs))
+  (define new-attrs (filter-not (λ (v) (equal? `(block ,punct-block-multi) v)) attrs))
   `(,tag ,@(if (null? new-attrs) '() (list new-attrs)) ,@new-elems))
 
 

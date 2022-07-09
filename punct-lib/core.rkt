@@ -43,4 +43,4 @@
   (hash-ref (hash-ref (current-metas) key #hasheq()) subkey #f))
 
 (define (block tag . elems)
-  `(,tag ([block "true"]) ,@elems))
+  `(,tag ([block "root"]) ,@elems))

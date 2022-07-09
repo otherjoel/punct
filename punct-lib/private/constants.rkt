@@ -13,3 +13,6 @@
 (define metas-id      'metas)
 (define doc-id        'doc)
 (define splicing-tag  '@)
+(define block-attr    'block)
+(define block-multi   "root")
+(define block-single  "single")

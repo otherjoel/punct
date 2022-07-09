@@ -20,6 +20,10 @@
        (not (null? (cdr v)))
        (null? (cddr v))))
 
+(define (attr-ref v key)
+  (and (list? v)
+       (cadr (assf (λ (attr) (eq? attr key)) v))))
+
 (define (tsexpr->values lst)
   (match lst
     [(list* (? symbol? tag) (list (? attr? attrs) ...) elems)
