@@ -20,13 +20,15 @@ other than code comments.
 
 ### Installation and Use
 
-Clone the repository, and from within the `punct/` directory, do `raco pkg install --link punct-lib/` (note the trailing slash).
+Clone the repository, and from within the `punct/` directory, do `raco pkg install --link
+punct-lib/` (note the trailing slash).
 
-Once this is done, try it out using `#lang punct` at the top of your Racket files. Running a Punct program directly will print out its AST.
+Once this is done, try it out using `#lang punct` at the top of your Racket files. Running a Punct
+program directly will print out its AST.
 
 ### Road Map
 
-- [ ] Finish the HTML renderer
+- [X] Finish the HTML renderer
 - [ ] Add markup/functions
 - [ ] Benchmarks, caching, other optimizations
 - [ ] [Scribble][] documentation
