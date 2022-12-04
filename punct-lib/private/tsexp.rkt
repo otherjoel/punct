@@ -21,8 +21,9 @@
        (null? (cddr v))))
 
 (define (attr-ref v key)
-  (and (list? v)
-       (cadr (assf (λ (attr) (eq? attr key)) v))))
+  (match v
+    [(list-no-order (list (== key) val) attrs ...) val]
+    [_ #f]))
 
 (define (tsexpr->values lst)
   (match lst
