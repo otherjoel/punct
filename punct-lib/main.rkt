@@ -7,7 +7,6 @@
 (module reader racket/base
   (require "private/constants.rkt"
            "private/reader-utils.rkt"
-           racket/class
            scribble/reader
            syntax/strip-context)
   (provide get-info (rename-out [*read-syntax read-syntax]))
