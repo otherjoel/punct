@@ -54,8 +54,6 @@
 
     (define/override (render-html-block elem) elem)
     (define/override (render-html elem) elem)
-    (define/override (render-other tag attrs elems)
-      `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))
     
     (define/override (render-footnote-reference label defnum refnum)
       `(sup (a [[href ,(~a "#" (fn-def-anchor label))]
@@ -88,8 +86,8 @@
     
     (super-new)))
 
-(define (doc->html doc)
-  (xexpr->string (send (new punct-html-render% [doc doc]) render-document)))
+(define (doc->html doc [fallback (λ (tag attrs elems) `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))])
+  (xexpr->string (send (new punct-html-render% [doc doc] [render-fallback fallback]) render-document)))
 
 #|   
     [(txexpr 'poetry attrs elems) (render-poetry attrs elems)]

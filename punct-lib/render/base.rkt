@@ -9,7 +9,7 @@
 
 (define punct-abstract-render%
   (class object%
-    (init-field doc)
+    (init-field doc render-fallback)
     
     (abstract render-thematic-break
               render-heading
@@ -28,9 +28,7 @@
               render-image
               render-html
               render-footnote-reference
-              render-footnote-definition
-              
-              render-other)
+              render-footnote-definition)
 
     (define/public (render-document)
       (values (render-elements (document-body doc))
@@ -71,8 +69,8 @@
         [`(html ,elem) (render-html elem)]
 
         ;; Other
-        [(list* (? symbol? tag) (list (? attr? attrs) ...) elems) (render-other tag attrs (render-elements elems))]
-        [(list* (? symbol? tag) elems) (render-other tag '() (render-elements elems))]))
+        [(list* (? symbol? tag) (list (? attr? attrs) ...) elems) (render-fallback tag attrs (render-elements elems))]
+        [(list* (? symbol? tag) elems) (render-fallback tag '() (render-elements elems))]))
     
     (super-new)))
 
