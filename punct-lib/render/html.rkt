@@ -31,10 +31,13 @@
     
     (define/override (render-thematic-break)
       '(hr))
+    
     (define/override (render-paragraph content)
       `(p ,@content))
+    
     (define/override (render-blockquote blocks)
       `(blockquote ,@blocks))
+    
     (define/override (render-code-block info elems)
       `(pre (code ,@(if info `(((info ,(~a "language-" info)))) '()) ,@elems)))
     
