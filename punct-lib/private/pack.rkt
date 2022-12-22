@@ -82,7 +82,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
   (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
          [opener (~a (car strs) ">")]
          [closer (~a "<" (cadr strs))]
-         [block-delim (if (equal? (attr-ref attrs 'block) punct-block-multi) "\n\n" "")])
+         [block-delim (if (attr-ref attrs 'block) "\n\n" "")])
     (values opener closer block-delim)))
 
 ;; Convert a tagged s-expression to a flat string
@@ -121,12 +121,13 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
   ;; if this is a block-expression and the only element is a paragraph, shuck the paragraph
   (define new-elems
     (if (and (assoc 'block attrs eq?)
+             (not (null? elems))
              (list? (car elems))
              (null? (cdr elems))
              (eq? (caar elems) 'paragraph))
         (cdr (car elems))     
         elems))
-  (define new-attrs (filter-not (λ (v) (equal? `(block ,punct-block-multi) v)) attrs))
+  (define new-attrs (filter-not (λ (v) (eq? 'block (car v))) attrs))
   `(,tag ,@(if (null? new-attrs) '() (list new-attrs)) ,@new-elems))
 
 
