@@ -5,8 +5,7 @@
 
 ;; Renders interpunct documents to HTML x-expressions
 
-(require "../private/struct.rkt"
-         "base.rkt"
+(require "base.rkt"
          net/uri-codec
          racket/class
          racket/format
@@ -51,8 +50,8 @@
     (define/override (render-code elems) `(code ,@elems))
     (define/override (render-link dest title elems)
       `(a [[href ,dest] ,@(if title `((title ,title)) '())] ,@elems))
-    (define/override (render-image src title elems)
-      `(img [[src ,src] ,@(if title `((title ,title)) '())]))
+    (define/override (render-image src title desc elems)
+      `(img [[src ,src] ,@(if desc `((alt ,desc)) '()) ,@(if title `((title ,title)) '())]))
     (define/override (render-line-break) '(br))
 
     (define/override (render-html-block elem) elem)

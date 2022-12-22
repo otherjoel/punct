@@ -62,7 +62,7 @@
         [`(italic . ,elems) (render-italic (render-elements elems))]
         [`(bold . ,elems) (render-bold (render-elements elems))]
         [`(code . ,elems) (render-code (render-elements elems))]
-        [`(image [[src ,src] [title ,title]] . ,elems) (render-image src title elems)]
+        [`(image [[src ,src] [title ,title] [desc ,desc]] . ,elems) (render-image src title desc elems)]
         [`(footnote-reference [[label ,label] [defn-num ,defn-num] [ref-num ,ref-num]])
          (render-footnote-reference label defn-num ref-num)]
         ['(line-break) (render-line-break)]
