@@ -5,8 +5,10 @@
 
 ;; Core functions used by #lang punct sources
 
-(require (for-syntax racket/base racket/sequence))
-(provide (all-defined-out))
+(require (for-syntax racket/base racket/sequence)
+         "doc.rkt"
+         "private/constants.rkt")
+(provide (all-defined-out) (all-from-out "doc.rkt"))
 
 (define current-metas (make-parameter #f))
 
@@ -43,4 +45,17 @@
   (hash-ref (hash-ref (current-metas) key #hasheq()) subkey #f))
 
 (define (block tag . elems)
-  `(,tag ([block "root"]) ,@elems))
+  `(,tag ([block ,punct-block-multi]) ,@elems))
+
+;;
+;; Tag functions
+;; ~~~~~~~~~~~~~~~~~~~~~
+
+(define (aside . elems)
+  (apply block 'aside elems))
+
+(define-syntax (@ stx)
+  (syntax-case stx ()
+    [(_ [[REF]] ELEMS ...)
+     (with-syntax ([refsym (syntax->datum #'REF)])
+       #''(xref [[dest 'refsym]] ELEMS ...))]))

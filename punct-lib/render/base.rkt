@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../private/tsexp.rkt"
-         "../private/struct.rkt"
+         "../doc.rkt"
          racket/class
          racket/match)
 

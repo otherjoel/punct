@@ -5,12 +5,12 @@
 
 ;; Parsing utility functions for #lang punct
 
-(require commonmark
+(require "doc.rkt"
+         commonmark
          (prefix-in cm: commonmark/struct)
          commonmark/private/render
          "private/constants.rkt"
          "private/pack.rkt"
-         "private/struct.rkt"
          "private/tsexp.rkt"
          racket/class
          racket/list
@@ -42,9 +42,12 @@ after rendering a single document.
 
 (define cm/punct-render%
   (class abstract-render%
+    (init metas)
+    (define my-metas metas)
     (define/override (render-document)
       (define-values [body footnotes] (super render-document))
-      (document (decode-single-blocks (reassemble-sexprs body))
+      (document my-metas
+                (decode-single-blocks (reassemble-sexprs body))
                 (decode-single-blocks (reassemble-sexprs footnotes))))
     (define/override (render-thematic-break)
       '(thematic-break))
@@ -81,16 +84,15 @@ after rendering a single document.
       `(footnote-definition ([label ,label] [ref-count ,ref-count]) ,@blocks))
     (super-new)))
 
-(define (string->punct-doc str #:who [who 'string->punct-doc])
-  (define intermediate-doc (string->document str)) 
-  (when (punct-debug) (displayln intermediate-doc))
-  (send (new cm/punct-render% [doc intermediate-doc] [who who]) render-document))
+(define (string->punct-doc str metas #:who [who 'string->punct-doc])
+  (define intermediate-doc (string->document str))
+  (send (new cm/punct-render% [metas metas] [doc intermediate-doc] [who who]) render-document))
 
 
 ;; Processes a list of elements into an punct document struct. If
 ;; extract-inline? is #t and the resulting doc contains only a single paragraph
 ;; and no footnotes, only the inline content of the paragraph is returned.
-(define (parse-markup-elements elems
+(define (parse-markup-elements metas elems
                                #:extract-inline? [extract-inline? #t]
                                #:parse-footnotes? [parse-fn? #f])
   (define doc
@@ -98,11 +100,11 @@ after rendering a single document.
       (~> (splice elems)
           (map flatpack _)
           (apply string-append _)
-          (string->punct-doc #:who 'parse-markup-elements))))
+          (string->punct-doc metas #:who 'parse-markup-elements))))
   
   (if extract-inline?
       (match doc
-        [(document `((paragraph ,content)) '()) `(,punct-splicing-tag ,content)]
+        [(document _ `((paragraph ,content)) '()) `(,punct-splicing-tag ,content)]
         [_ doc])
       doc))
  

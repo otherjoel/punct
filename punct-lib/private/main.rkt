@@ -30,7 +30,7 @@
           DOC
           ; Function to run after all expressions are evaluated
           (λ (xprs)
-            (begin0 (parse-markup-elements xprs #:extract-inline? #f #:parse-footnotes? #t)
+            (begin0 (parse-markup-elements (current-metas) xprs #:extract-inline? #f #:parse-footnotes? #t)
                     (set! METAS (current-metas))
                     (current-metas PREV-METAS)))
           (require CORE EXTRA-MODULES ...)
