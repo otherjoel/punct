@@ -7,8 +7,11 @@
 
 (require (for-syntax racket/base racket/sequence)
          "doc.rkt"
+         "private/tsexp.rkt"
          "private/constants.rkt")
-(provide (all-defined-out) (all-from-out "doc.rkt"))
+(provide attr-ref
+         (all-defined-out)
+         (all-from-out "doc.rkt"))
 
 (define current-metas (make-parameter #f))
 
@@ -46,16 +49,3 @@
 
 (define (block tag . elems)
   `(,tag ([block ,punct-block-multi]) ,@elems))
-
-;;
-;; Tag functions
-;; ~~~~~~~~~~~~~~~~~~~~~
-
-(define (aside . elems)
-  (apply block 'aside elems))
-
-(define-syntax (@ stx)
-  (syntax-case stx ()
-    [(_ [[REF]] ELEMS ...)
-     (with-syntax ([refsym (syntax->datum #'REF)])
-       #''(xref [[dest 'refsym]] ELEMS ...))]))
