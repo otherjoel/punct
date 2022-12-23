@@ -14,7 +14,9 @@
          threading
          (only-in xml xexpr->string))
 
-(provide doc->html default-html-tag)
+(provide doc->html
+         doc->html-xexpr
+         default-html-tag)
 
 (define punct-html-render%
   (class punct-abstract-render%
@@ -88,8 +90,11 @@
     
     (super-new)))
 
+(define (doc->html-xexpr doc [fallback default-html-tag])
+  (send (new punct-html-render% [doc doc] [render-fallback fallback]) render-document))
+
 (define (doc->html doc [fallback default-html-tag])
-  (xexpr->string (send (new punct-html-render% [doc doc] [render-fallback fallback]) render-document)))
+  (xexpr->string (doc->html-xexpr doc fallback)))
 
 (define (default-html-tag tag attrs elems)
   `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))

@@ -127,7 +127,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
              (eq? (caar elems) 'paragraph))
         (cdr (car elems))     
         elems))
-  (define new-attrs (filter-not (λ (v) (eq? 'block (car v))) attrs))
+  (define new-attrs (filter-not (λ (v) (equal? `(block ,punct-block-multi) v)) attrs))
   `(,tag ,@(if (null? new-attrs) '() (list new-attrs)) ,@new-elems))
 
 
