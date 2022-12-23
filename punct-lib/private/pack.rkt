@@ -82,7 +82,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
   (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
          [opener (~a (car strs) ">")]
          [closer (~a "<" (cadr strs))]
-         [block-delim (if (attr-ref attrs 'block) "\n\n" "")])
+         [block-delim (if (equal? (attr-ref attrs 'block) punct-block-multi) "\n\n" "")])
     (values opener closer block-delim)))
 
 ;; Convert a tagged s-expression to a flat string
