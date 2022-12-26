@@ -20,6 +20,13 @@
        (not (null? (cdr v)))
        (null? (cddr v))))
 
+(define (safe-attr? v)
+  (and (list? v)
+       (symbol? (car v))
+       (not (null? (cdr v)))
+       (null? (cddr v))
+       (string? (cadr v))))
+
 (define (attr-ref v key)
   (match v
     [(list-no-order (list (== key) val) attrs ...) val]

@@ -93,6 +93,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
     [(or (null? v) (void? v)) ""]
     [(and (list? v) (symbol? (car v)))
      (define-values (tag attrs elems) (tsexpr->values v))
+     (unless (andmap safe-attr? attrs) (error 'punct "Attributes must be symbol-string pairs: ~a" attrs))
      (define-values (tag-open tag-close block-delim) (make-open/close-html-tags tag attrs))
      (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]
     [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
