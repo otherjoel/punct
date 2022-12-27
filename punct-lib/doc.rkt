@@ -5,9 +5,12 @@
 
 (provide (struct-out document) meta-ref)
 
-#| Punct’s document struct
-…is exactly like Commonmark’s except 1) it includes a hash table for metadata,
-and 2) it is prefab so it can be serialized.
+#| Punct’s document structure is very similar to Commonmark’s,
+   except that it is prefab and uses simple lists instead of
+   structs. This makes it easier to add custom elements, and to
+   serialize the document.
+
+   Punct’s doc also includes a hash table for metadata.
 |#
 
 (struct document (metas body footnotes) #:prefab)

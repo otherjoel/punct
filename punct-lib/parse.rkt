@@ -30,7 +30,7 @@
 
 A subclass of the abstract-render% class from commonmark/private/render that
 simply renders the document to interpunct’s own document struct (see
-private/struct for more info on the differences from the document struct
+private/doc for more info on the differences from the document struct
 provided by commonmark).
 
 Comments in commonmark/private/render indicate that abstract-render% is not
