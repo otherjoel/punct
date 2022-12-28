@@ -133,7 +133,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 
 
 ;; Performs Step 4 above: reassembling s-expressions within nested lists by
-;; using HTML delimiters as delimiters.
+;; using html and html-block elements as delimiters.
 (define (reassemble-sexprs v)
   (cond
     [(not (list? v)) v]
