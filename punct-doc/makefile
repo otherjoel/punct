@@ -2,6 +2,7 @@ SHELL = /bin/bash
 
 scribble: punct.scrbl
 scribble: ## Rebuild Scribble docs
+	rm -rf punct/*
 	scribble --htmls +m --redirect https://docs.racket-lang.org/local-redirect/ punct.scrbl
 
 publish: ## Sync Scribble HTML docs to web server (doesn’t rebuild anything)
