@@ -8,10 +8,10 @@ that can be rendered in HTML (or any other target file type).
 
 ## Installation
 
-Clone the repository, and from within the checkout’s root folder, do `raco pkg install --link
+Clone this repository, and from within the checkout’s root folder, do `raco pkg install --link
 punct-lib/ punct-doc/` (note the trailing slashes).
 
 Once this is done, try it out by following along with the [Quick Start][qs].
 
-[qs]: https://joeldueck.com/what-about/punct/Quick_Start.html
+[qs]: https://joeldueck.com/what-about/punct/Quick_start.html
 

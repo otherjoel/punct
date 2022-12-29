@@ -39,7 +39,7 @@ or support some new feature, I encourage you to fork it and customize it yoursel
 This documentation assumes you are familiar with Racket, and with @racketlink[xexpr?]{X-expressions}
 and associated terms (attributes, elements, etc).
 
-@section{Quick Start}
+@section{Quick start}
 
 Open DrRacket and start a new file like so:
 
@@ -72,10 +72,6 @@ value, but is also bound to @racketid[metas].
 ())))
 
 @(ev '(define metas '#hasheq((author . "Me") (here-path . "7-unsaved-editor"))))
-
-Because Punct sources provide bindings for @racketidfont{doc} and @racketidfont{metas} just like
-Pollen markup sources do, you should be able to use Punct sources in Pollen projects without too
-much trouble.
 
 @examples[#:eval ev
           #:label #f
@@ -219,7 +215,7 @@ block and “shucks” them out of their containing paragraphs. The need for suc
 a design decision to use the @racketmodname[commonmark] package exactly as published, without
 forking or customizing it in any way.
 
-@subsection{Rendering your custom elements}
+@subsection[#:tag "rendering-custom-elements"]{Rendering custom elements}
 
 When rendering your document to a specific output format (such as HTML) you’ll want to provide
 a fallback procedure to the renderer that can convert those elements into that specific format.
@@ -321,6 +317,9 @@ future.
 
 Renders @racket[_doc] into a string containing HTML markup. Any @tech{custom elements} are passed to
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
+
+For more information on using the @racket[_fallback] argument to render custom elements, see
+@secref["rendering-custom-elements"].
                                                                                          
 }
 
@@ -457,7 +456,7 @@ in all other contexts.
 @item{Punct provides no project web server for previewing your HTML output. (You can use Pollen’s,
 or use @link["https://github.com/samdphillips/raco-static-web"]{@tt{raco static-web}}.)}
 
-@item{Punct provides no command-line tools of any kind for rendering output, and no templating
+@item{Punct provides no command-line tools for rendering output, and no templating
 tools. (You can write Racket scripts for these things pretty easily. For templates in particular,
 consider @secref["at-exp-lang" #:doc '(lib "scribblings/scribble/scribble.scrbl")].)}
 
@@ -475,7 +474,8 @@ can still use Pollen’s @seclink["Pagetree" #:doc '(lib
 messages.}
 
 @item{Punct does not search through your filesystem for a @filepath{pollen.rkt} or other special
-file to auto-require into your source files.}
+file to auto-require into your source files. This means there is also no “setup module” mechanism
+for customizing Punct’s behavior.}
 
 @item{Where Pollen’s documentation is generous and patient and does not assume any familiarity with
 Racket, Punct’s documentation is clipped, and kind of assumes you know what you’re doing.}
