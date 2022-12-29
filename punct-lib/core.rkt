@@ -7,8 +7,7 @@
 
 (require (for-syntax racket/base racket/sequence)
          "doc.rkt"
-         "private/tsexp.rkt"
-         "private/constants.rkt")
+         "private/tsexp.rkt")
 (provide attr-ref
          (all-defined-out)
          (all-from-out "doc.rkt"))
@@ -47,5 +46,3 @@
 (define (get-metas-subhash key subkey)
   (hash-ref (hash-ref (current-metas) key #hasheq()) subkey #f))
 
-(define (block tag . elems)
-  `(,tag ([block ,punct-block-multi]) ,@elems))
