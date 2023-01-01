@@ -39,6 +39,8 @@ or support some new feature, I encourage you to fork it and customize it yoursel
 This documentation assumes you are familiar with Racket, and with @racketlink[xexpr?]{X-expressions}
 and associated terms (attributes, elements, etc).
 
+@local-table-of-contents[]
+
 @section{Quick start}
 
 Open DrRacket and start a new file like so:
