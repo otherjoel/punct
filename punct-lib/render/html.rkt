@@ -44,8 +44,8 @@
     
     (define/override (render-itemization style start elems)
       (if (not start)
-          `(ul ,@elems)
-          `(ol [[start ,(~a start)]] ,@elems)))
+          `(ul [[class ,(symbol->string style)]] ,@elems)
+          `(ol [[class ,(symbol->string style)] [start ,(~a start)]] ,@elems)))
     (define/override (render-item elems) `(li ,@elems))
     (define/override (render-bold elems) `(b ,@elems))
     (define/override (render-italic elems) `(i ,@elems))
