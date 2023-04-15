@@ -43,9 +43,9 @@
       `(pre (code ,@(if info `(((info ,(~a "language-" info)))) '()) ,@elems)))
     
     (define/override (render-itemization style start elems)
-      (if (not start)
-          `(ul [[class ,(symbol->string style)]] ,@elems)
-          `(ol [[class ,(symbol->string style)] [start ,(~a start)]] ,@elems)))
+      (if (equal? start (~a #f))
+          `(ul [[class ,style]] ,@elems)
+          `(ol [[class ,style] [start ,start]] ,@elems)))
     (define/override (render-item elems) `(li ,@elems))
     (define/override (render-bold elems) `(b ,@elems))
     (define/override (render-italic elems) `(i ,@elems))
@@ -62,9 +62,10 @@
     (define/override (render-footnote-reference label defnum refnum)
       `(sup (a [[href ,(~a "#" (fn-def-anchor label))]
                 [id ,(fn-ref-anchor label refnum)]]
-               ,(number->string defnum))))
+               ,defnum)))
 
-    (define/override (render-footnote-definition label refcount elems)
+    (define/override (render-footnote-definition label refcount-attr elems)
+      (define refcount (string->number refcount-attr))
       (define backrefs
         (~> (for/list ([n (in-range refcount)])
               (define refnum (add1 n))

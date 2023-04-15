@@ -13,6 +13,7 @@
          "private/pack.rkt"
          "private/tsexp.rkt"
          racket/class
+         (only-in racket/format ~a)
          racket/list
          racket/match
          threading)
@@ -52,7 +53,7 @@ after rendering a single document.
     (define/override (render-thematic-break)
       '(thematic-break))
     (define/override (render-heading content level)
-      `(heading ([level ,level]) ,@content))
+      `(heading ([level ,(~a level)]) ,@content))
     (define/override (render-code-block content info)
       `(code-block ([info ,info]) ,content))
     (define/override (render-html-block content)
@@ -62,7 +63,7 @@ after rendering a single document.
     (define/override (render-blockquote blocks)
       `(blockquote ,@blocks))
     (define/override (render-itemization blockss style start-num)
-      `(itemization ([style ,style] [start ,start-num])
+      `(itemization ([style ,(~a style)] [start ,(~a start-num)])
                     ,@(for/list ([blocks (in-list blockss)]) `(item ,@blocks))))
     (define/override (render-line-break)
       '(line-break))
@@ -79,9 +80,9 @@ after rendering a single document.
     (define/override (render-html content)
       `(html ,content))
     (define/override (render-footnote-reference label defn-num ref-num)
-      `(footnote-reference ([label ,label] [defn-num ,defn-num] [ref-num ,ref-num])))
+      `(footnote-reference ([label ,label] [defn-num ,(~a defn-num)] [ref-num ,(~a ref-num)])))
     (define/override (render-footnote-definition blocks label ref-count)
-      `(footnote-definition ([label ,label] [ref-count ,ref-count]) ,@blocks))
+      `(footnote-definition ([label ,label] [ref-count ,(~a ref-count)]) ,@blocks))
     (super-new)))
 
 (define (string->punct-doc str metas #:who [who 'string->punct-doc])
