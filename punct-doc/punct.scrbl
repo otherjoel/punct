@@ -33,6 +33,8 @@ The latest version of this documentation can be found at
 @link["https://joeldueck.com/what-about/punct/"]{@tt{joeldueck.com}}. The source and installation
 instructions are at the project’s @link["https://github.com/otherjoel/punct"]{GitHub repo}.
 
+@youtube-embed-element["https://www.youtube.com/embed/9zxna1tlvHU"]
+
 I have designed Punct for my own use and creative needs. If you would like Punct to work differently
 or support some new feature, I encourage you to fork it and customize it yourself.
 
@@ -57,8 +59,15 @@ Open DrRacket and start a new file like so:
   Simple.
 }}
 
-Now click the @onscreen{Run} button in the toolbar. Punct will parse the document and produce
-a @racket[document] struct containing its metadata and an Abstract Syntax Tree (AST):
+As you can see, this document uses
+@hyperlink["https://www.markdownguide.org/basic-syntax/"]{Markdown} formatting and has a little
+metadata block near the beginning. It’s essentially a normal Markdown file, very much like one you
+would use with most publishing systems. The only thing that makes it different is the addition of
+@racketmodfont{#lang punct} at the top.
+
+Now click the @onscreen{Run} button in the toolbar. Punct will parse the document’s Markdown content
+and metadata, and produce a @racket[document] struct containing the metadata and an Abstract Syntax
+Tree (AST):
 
 @racketblock[
  '#s(document #hasheq((author . "Me") (here-path . "7-unsaved-editor"))
@@ -384,6 +393,9 @@ The bindings provided by this module are also provided by @racketmodname[punct/c
 @defstruct[document ([metas hash-eq?] [body (listof xexpr?)] [footnotes (listof xexpr?)]) #:prefab]{
 
 A parsed Punct document.
+
+@history[#:changed "1.0" @elem{@racket[_body] and @racket[_footnotes] now guaranteed to be valid
+X-expressions and not simply lists.}]
 
 }
 

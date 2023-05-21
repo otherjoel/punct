@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require scribble/example
+(require scribble/core
+         scribble/example
+         scribble/html-properties
          scribble/manual)
 
 (provide (all-defined-out))
@@ -14,3 +16,15 @@
 (define (sandbox)
   (make-base-eval #:lang 'racket/base))
 
+(define (youtube-embed-element src)
+  (element
+   (make-style
+   "youtube-embed"
+   (list
+    (make-alt-tag "iframe")
+    (make-attributes `((width           . "700")
+                       (height          . "394")
+                       (src             . ,src)
+                       (frameborder     . "0")
+                       (allowfullscreen . "")))))
+   ""))
