@@ -62,7 +62,7 @@ a @racket[document] struct containing its metadata and an Abstract Syntax Tree (
 
 @racketblock[
  '#s(document #hasheq((author . "Me") (here-path . "7-unsaved-editor"))
-              ((heading ((level 1)) "My first Punct doc") (paragraph "Simple."))
+              ((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
               ())]
 
 This value is automatically bound to @racketid[doc]. The metadata at the top is included in that
@@ -70,7 +70,7 @@ value, but is also bound to @racketid[metas].
 
 @(ev '(define doc
         '#s(document #hasheq((author . "Me") (here-path . "7-unsaved-editor"))
-((heading ((level 1)) "My first Punct doc") (paragraph "Simple."))
+((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
 ())))
 
 @(ev '(define metas '#hasheq((author . "Me") (here-path . "7-unsaved-editor"))))
@@ -123,7 +123,7 @@ Results in:
 @racketblock[
  '#s(document #hasheq((here-path . "7-unsaved-editor"))
               ((paragraph "Three things to remember:")
-                 (itemization ((style tight) (start #f))
+                 (itemization ((style "tight") (start "#f"))
                               (item "KEEP")
                               (item "IT")
                               (item "DOWN")))
@@ -133,13 +133,10 @@ Results in:
 
 You can use Racket code to introduce new elements to the document’s structure.
 
-A @deftech{custom element} is any list that begins with a symbol. A custom element may optionally
+A @deftech{custom element} is any @racket[xexpr?] that begins with a symbol. A custom element may optionally
 have a set of @deftech{attributes}, which is a list of key/value pairs that appears as the second
 item in the list. The keys must be symbols and the values must be strings, or an exception is
 raised.
-
-@margin-note{Custom elements are essentially @racket[xexpr?], except that characters, booleans,
-lists and vectors are also allowed sub-elements.}
 
 Here is an example of a function that produces a custom @tt{abbreviation} element with a @tt{term}
 attribute:
@@ -384,7 +381,7 @@ is given as a bare identifier (i.e., without using @racket[quote]).
 
 The bindings provided by this module are also provided by @racketmodname[punct/core].
 
-@defstruct[document ([metas hash-eq?] [body list?] [footnotes list?]) #:prefab]{
+@defstruct[document ([metas hash-eq?] [body (listof xexpr?)] [footnotes (listof xexpr?)]) #:prefab]{
 
 A parsed Punct document.
 
