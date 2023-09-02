@@ -3,8 +3,14 @@
 (define collection "punct")
 (define scribblings '(("punct.scrbl")))
 
-(define deps '("base"))
-(define build-deps '("punct-lib"))
+(define deps '("scribble-lib"
+               "base"))
+(define build-deps '("commonmark-doc"
+                     "commonmark-lib"
+                     "pollen"
+                     "racket-doc"
+                     "scribble-doc"
+                     "punct-lib"))
 
 (define update-implies '("punct-lib"))
 
