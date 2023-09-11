@@ -6,6 +6,7 @@
                      punct/fetch
                      punct/parse
                      punct/render/html
+                     punct/render/plaintext
                      racket/base
                      racket/contract/base
                      racket/match
@@ -314,16 +315,16 @@ Within the document body you can also use the @racket[?] macro as shorthand for 
 A Punct document is format-independent; when you want to use it in an output file, it must be
 rendered into that output file’s format.
 
-Punct includes an HTML renderer, and is designed to include renderers for more formats in the
-future.
+Punct includes an HTML renderer and a plain-text renderer, and is designed to include renderers for
+more formats in the future.
 
 @subsection{Rendering HTML}
 
 @defmodule[punct/render/html]
 
-@defproc[(doc->html [doc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) string?]{
+@defproc[(doc->html [pdoc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) string?]{
 
-Renders @racket[_doc] into a string containing HTML markup. Any @tech{custom elements} are passed to
+Renders @racket[_pdoc] into a string containing HTML markup. Any @tech{custom elements} are passed to
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
 
 For more information on using the @racket[_fallback] argument to render custom elements, see
@@ -339,6 +340,63 @@ Mainly used as the default fallback procedure for @racket[doc->html].
 @examples[#:eval ev
 (default-html-tag 'kbd '() '("Enter"))
 (default-html-tag 'a '((href "http://example.com")) '("Link"))
+]                                                                                                          
+}
+
+@subsection{Rendering plain text}
+
+@defmodule[punct/render/plaintext]
+
+Sometimes you want to convert a document into a text format that is even plainer than Markdown, such
+as when generating the plaintext version of an email newsletter.
+
+@defproc[(doc->plaintext [pdoc document?]
+                         [line-width exact-nonnegative-integer?]
+                         [fallback (symbol? (listof (listof symbol? string?)) list? . -> . string?)
+                                   (make-plaintext-fallback line-width)]) string?]{
+
+Renders @racket[_pdoc] into a string of plain text, hard-wrapped to @racket[_line-width] characters
+(except for block-quotes, which are hard-wrapped to a length approximately 75% as long as
+@racket[_line-width]). Any @tech{custom elements} are passed to @racket[_fallback], which must
+return a string.
+
+The function applies very rudimentary text formatting which usually looks as you would expect, but
+which often discards information.
+
+@itemlist[
+
+@item{Level 1 headings are underlined with @litchar{=}, and all other headings are underlined with
+@litchar{-}.}
+
+@item{Link destination URLs are given inside parentheses directly following the link text.}
+
+@item{Code blocks are indented with four spaces, and the language name, if any, is discarded.}
+
+@item{Images are replaced with their “alt” text, prefixed by @racket["Image: "] and wrapped in
+parentheses; the source URL and title are discarded.}
+
+]
+
+For more information on using the @racket[_fallback] argument to render custom elements, see
+@secref["rendering-custom-elements"].
+
+@examples[#:eval ev
+          (require punct/render/plaintext)
+          (display (doc->plaintext doc 72))]
+                                         
+}
+
+
+@defproc[(make-plaintext-fallback [width exact-nonnegative-integer?])
+         (symbol? (listof (listof symbol? string?)) list? . -> . string?)]{
+
+Returns a function that accepts three arguments (the tag, attributes and elements of an
+X-expression).  Mainly used to create the default fallback procedure for @racket[doc->plaintext].
+
+@examples[#:eval ev
+(define foo (make-plaintext-fallback 72))
+(foo 'kbd '() '("Enter"))
+(foo 'a '((href "http://example.com")) '("Link"))
 ]                                                                                                          
 }
 
