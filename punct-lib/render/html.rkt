@@ -16,7 +16,8 @@
          txexpr
          (only-in xml xexpr->string))
 
-(provide doc->html
+(provide punct-html-render%
+         doc->html
          doc->html-xexpr
          default-html-tag)
 
