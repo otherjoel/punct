@@ -101,13 +101,3 @@
 
 (define (default-html-tag tag attrs elems)
   `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))
-
-#|   
-    [(txexpr 'poetry attrs elems) (render-poetry attrs elems)]
-    [(txexpr 'dialogue _ elems) `(dl ,@elems)]
-    [(list 'speech interlocutor elems ...)
-     `(@ (dt ,interlocutor (span [[class "x"]] ": ")) (dd ,@elems))]
-    [(txexpr 'figure attrs elems) (render-figure (car elems) (cdr elems))]
-    [else (fallback-proc v)]))
-|#
-
