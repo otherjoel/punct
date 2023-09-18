@@ -11,6 +11,7 @@
          racket/format
          racket/list
          racket/match
+         racket/string
          threading
          (only-in xml xexpr->string))
 
@@ -40,10 +41,10 @@
       `(blockquote ,@blocks))
     
     (define/override (render-code-block info elems)
-      `(pre (code ,@(if info `(((info ,(~a "language-" info)))) '()) ,@elems)))
+      `(pre (code ,@(if (non-empty-string? info) `(((info ,(~a "language-" info)))) '()) ,@elems)))
     
     (define/override (render-itemization style start elems)
-      (if (equal? start (~a #f))
+      (if (equal? start "")
           `(ul [[class ,style]] ,@elems)
           `(ol [[class ,style] [start ,start]] ,@elems)))
     (define/override (render-item elems) `(li ,@elems))
@@ -51,9 +52,9 @@
     (define/override (render-italic elems) `(i ,@elems))
     (define/override (render-code elems) `(code ,@elems))
     (define/override (render-link dest title elems)
-      `(a [[href ,dest] ,@(if title `((title ,title)) '())] ,@elems))
+      `(a [[href ,dest] ,@(if (non-empty-string? title) `((title ,title)) '())] ,@elems))
     (define/override (render-image src title desc elems)
-      `(img [[src ,src] ,@(if desc `((alt ,desc)) '()) ,@(if title `((title ,title)) '())]))
+      `(img [[src ,src] ,@(if (non-empty-string? desc) `((alt ,desc)) '()) ,@(if title `((title ,title)) '())]))
     (define/override (render-line-break) '(br))
 
     (define/override (render-html-block elem) elem)
