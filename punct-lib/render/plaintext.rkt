@@ -63,14 +63,14 @@
   (class punct-abstract-render%
     (init line-width)
     (define width line-width)
-    (define inset-width (floor (inexact->exact (* width .75))))
+    (define inset-width (inexact->exact (floor (* width .75))))
     (define/override (render-document)
       (define-values [body-strs footnote-strs] (super render-document))
       (define body (string-append* body-strs))
       (if (null? footnote-strs)
           body
           (string-append* body
-                          "--------------------\nFootnotes\n\n"
+                          "--------------------\nFootnotes:\n\n"
                           footnote-strs)))
     
     (define/override (render-heading level elems)
@@ -97,7 +97,7 @@
       (string-append*
        (if (equal? start (~a #f))
            (map (λ (e) (wrap-text e width #:first-line-prefix " * ")) elems)
-           (for/list ([item (in-list elems)] [i (in-naturals)])
+           (for/list ([item (in-list elems)] [i (in-naturals 1)])
              (wrap-text item width #:first-line-prefix (format "~a. " i))))))
 
     (define/override (render-item elems) ($+ elems))
@@ -127,7 +127,7 @@
 
 (define (make-plaintext-fallback width)
   (λ (tag attrs elems)
-    (wrap-text (cons (format "[~a:] " tag) elems) width)))
+    (wrap-text (cons (format "[~a] " tag) elems) width)))
 
 (define (doc->plaintext doc width [fallback (make-plaintext-fallback width)])
   (send (new punct-plaintext-render% [doc doc] [line-width width] [render-fallback fallback]) render-document))
