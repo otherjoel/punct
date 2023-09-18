@@ -12,7 +12,6 @@
          racket/list
          racket/match
          racket/string
-         threading
          (only-in xml xexpr->string))
 
 (provide doc->plaintext
@@ -112,7 +111,7 @@
     (define/override (render-line-break) "\n")
 
     (define/override (render-html-block elem) ($+ elem "\n\n"))
-    (define/override (render-html elem) elem)
+    (define/override (render-html elem) "") ; strip inline HTML tags
     
     (define/override (render-footnote-reference label defnum refnum)
       (format "(~a)" defnum))
