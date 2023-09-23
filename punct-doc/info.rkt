@@ -7,7 +7,6 @@
                "base"))
 (define build-deps '("commonmark-doc"
                      "commonmark-lib"
-                     "pollen"
                      "racket-doc"
                      "scribble-doc"
                      "punct-lib"))
