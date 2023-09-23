@@ -194,13 +194,13 @@ a @tt{paragraph} element), you must give it a @racket['block] attribute with a v
 @racket["root"] or @racket["single"]:
 
 @itemlist[
-          
+
 @item{@racket["root"] should be used for blocks that might contain other block elements.
-@bold{Limitations:} @racket["root"]-type blocks cannot be contained inside Markdown-created 
+@bold{Limitations:} @racket["root"]-type blocks cannot be contained inside Markdown-created
 @tech[#:doc '(lib "scribblings/commonmark.scrbl")]{flows} (such as block quotations notated using
 @litchar{>}); if found inside such a flow, they will “escape” out to the root level of the
 document.}
-           
+
 @item{@racket["single"] should be used for block elements that might need to be contained within
 Markdown-created @tech[ #:doc '(lib "scribblings/commonmark.scrbl")]{flows}. @bold{Limitations:}
 @racket["single"]-type blocks must appear on their own line or lines in order to be counted as
@@ -267,7 +267,7 @@ By default, Punct programs have access to the bindings in @racketmodname[racket/
 @itemlist[#:style 'ordered
 
 @item{By using @racket[require] as you usually would, or}
-          
+
 @item{By adding one or more @secref["module-paths" #:doc '(lib "scribblings/guide/guide.scrbl")]
 directly on the @hash-lang[] line.}]
 
@@ -329,7 +329,7 @@ Renders @racket[_pdoc] into a string containing HTML markup. Any @tech{custom el
 
 For more information on using the @racket[_fallback] argument to render custom elements, see
 @secref["rendering-custom-elements"].
-                                                                                         
+
 }
 
 @defproc[(default-html-tag [tag symbol?] [attributes (listof (listof symbol? string?))] [elements list?]) xexpr?]{
@@ -340,7 +340,7 @@ Mainly used as the default fallback procedure for @racket[doc->html].
 @examples[#:eval ev
 (default-html-tag 'kbd '() '("Enter"))
 (default-html-tag 'a '((href "http://example.com")) '("Link"))
-]                                                                                                          
+]
 }
 
 @subsection{Rendering plain text}
@@ -383,7 +383,7 @@ For more information on using the @racket[_fallback] argument to render custom e
 @examples[#:eval ev
           (require punct/render/plaintext)
           (display (doc->plaintext doc 72))]
-                                         
+
 }
 
 
@@ -397,7 +397,7 @@ X-expression).  Mainly used to create the default fallback procedure for @racket
 (define foo (make-plaintext-fallback 72))
 (foo 'kbd '() '("Enter"))
 (foo 'a '((href "http://example.com")) '("Link"))
-]                                                                                                          
+]
 }
 
 @section{Module Reference}
@@ -414,7 +414,7 @@ The final value of this parameter becomes the value of @racket[document-metas] f
 
 The only key automatically defined in every metadata table is @racket['here-path], which holds the
 absolute path to the source file.
-                                                                  
+
 If no Punct file is currently being compiled, this parameter will hold @racket[#f] by default. In
 particular, this parameter is @emph{not} automatically set to a Punct file’s @racketidfont{metas}
 during the rendering phase (e.g., @racket[doc->html]).
@@ -424,7 +424,7 @@ during the rendering phase (e.g., @racket[doc->html]).
 @defproc[(set-meta [key symbol?] [val (not/c procedure?)]) void?]{
 
 Set the value of @racket[_key] in @racket[current-metas] to @racket[_val]. If there are no current
-metas, an ugly exception is thrown.                
+metas, an ugly exception is thrown.
 
 }
 
@@ -510,7 +510,7 @@ will parse Markdown-style footnote references and definitions in @racket[_elemen
 
 @section{Differences from Pollen}
 
-Punct is heavily indebted to @seclink["top" #:doc '(lib "pollen/scribblings/pollen.scrbl")]{Pollen}.
+Punct is heavily indebted to @seclink["top" #:indirect? #t #:doc '(lib "pollen/scribblings/pollen.scrbl")]{Pollen}.
 Much of its design and code comes from Pollen. And because Punct sources provide bindings for
 @racketidfont{doc} and @racketidfont{metas} just like Pollen markup sources do, you should be
 able to use Punct sources in Pollen projects without too much trouble.
@@ -536,7 +536,7 @@ a @link["https://www.gnu.org/software/make/manual/html_node/Introduction.html"]{
 @item{Punct does not provide a “preprocessor” dialect.}
 
 @item{Punct does not offer any tools for ordering content, or for navigation. (But of course, you
-can still use Pollen’s @seclink["Pagetree" #:doc '(lib
+can still use Pollen’s @seclink["Pagetree" #:indirect? #t #:doc '(lib
 "pollen/scribblings/pollen.scrbl")]{pagetrees} or some scheme of your own.)}
 
 @item{Punct generally eschews contracts and makes almost no effort to provide friendly error
@@ -550,6 +550,3 @@ for customizing Punct’s behavior.}
 Racket, Punct’s documentation is clipped, and kind of assumes you know what you’re doing.}
 
 ]
-
-
-
