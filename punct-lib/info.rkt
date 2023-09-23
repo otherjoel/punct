@@ -8,4 +8,5 @@
 (define deps '("at-exp-lib"
                "commonmark-lib"
                "threading-lib"
+               "txexpr"
                "base"))
