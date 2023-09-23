@@ -1,7 +1,7 @@
 #lang info
 
 (define collection "punct")
-(define version "0.1")
+(define version "1.0")
 (define pkg-desc "implementation part of \"punct\"")
 (define license 'BlueOak-1.0.0)
 

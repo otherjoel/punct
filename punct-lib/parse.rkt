@@ -105,7 +105,7 @@ after rendering a single document.
   
   (if extract-inline?
       (match doc
-        [(document _ `((paragraph ,content)) '()) `(,punct-splicing-tag ,content)]
+        [(document _ (list (list* paragraph content)) _) `(,punct-splicing-tag ,content)]
         [_ doc])
       doc))
  
