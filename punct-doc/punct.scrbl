@@ -143,10 +143,10 @@ Results in:
 
 You can use Racket code to introduce new elements to the document’s structure.
 
-A @deftech{custom element} is any @racket[xexpr?] that begins with a symbol. A custom element may optionally
-have a set of @deftech{attributes}, which is a list of key/value pairs that appears as the second
-item in the list. The keys must be symbols and the values must be strings, or an exception is
-raised.
+A @deftech{custom element} is an @racket[xexpr?] that begins with a symbol other than those produced
+by the Markdown parser. A custom element may optionally have a set of @deftech{attributes}, which is
+a list of key/value pairs that appears as the second item in the list. The keys must be symbols and
+the values must be strings, or an exception is raised.
 
 Here is an example of a function that produces a custom @tt{abbreviation} element with a @tt{term}
 attribute:
@@ -324,8 +324,19 @@ more formats in the future.
 
 @defproc[(doc->html [pdoc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) string?]{
 
-Renders @racket[_pdoc] into a string containing HTML markup. Any @tech{custom elements} are passed to
+Renders @racket[_pdoc] into a string containing HTML markup. Each @tech{custom element} is passed to
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
+
+For more information on using the @racket[_fallback] argument to render custom elements, see
+@secref["rendering-custom-elements"].
+
+}
+
+@defproc[(doc->html-xexpr [pdoc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) xexpr?]{
+
+Renders @racket[_pdoc] into HTML, but in @racketlink[xexpr?]{X-expression} form rather than as a
+string. Each @tech{custom element} is passed to @racket[_fallback], which must itself return an
+X-expression.
 
 For more information on using the @racket[_fallback] argument to render custom elements, see
 @secref["rendering-custom-elements"].
@@ -382,7 +393,8 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 @examples[#:eval ev
           (require punct/render/plaintext)
-          (display (doc->plaintext doc 72))]
+          (define email (parse-markup-elements (hasheq) '("# Issue No. 1\n\nHowdy!")))
+          (display (doc->plaintext email 72))]
 
 }
 
