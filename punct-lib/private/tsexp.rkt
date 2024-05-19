@@ -10,9 +10,11 @@
    attribute values to strings, and their elements can be literally anything.
 |#
 
-(require racket/match)
+(require racket/match
+         txexpr)
 
 (provide (all-defined-out))
+(provide txexpr)
 
 (define (attr? v)
   (and (list? v)
@@ -38,3 +40,35 @@
      (values tag attrs elems)]
     [(list* (? symbol? tag) elems)
      (values tag '() elems)]))
+
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; Match expander
+
+(require (for-syntax racket/base
+                     racket/match
+                     racket/symbol
+                     txexpr))
+
+;; A match expander for txexprs that allows matching optional attributes
+;; Example:
+;;  (tx* 'img (id desc?) elems)
+;; will match 'img txexpr with just id attribute, or both id and desc attributes, but not without id
+(define-match-expander tx*
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ tag-pat (attr ...) elem-pat)
+       (with-syntax ([(hash-key ...)
+                      (map maybe-optional-key (syntax->list #'(attr ...)))])
+         #'(txexpr tag-pat (app attrs->hash (hash* hash-key ...)) elem-pat))]
+      [(_ tag-pat elem-pat)
+       #'(txexpr tag-pat _ elem-pat)])))
+
+;; Converts identifiers into hash* match patterns
+;; id → ['id id]
+;; id? → ['id id #:default #f]
+(define-for-syntax (maybe-optional-key stx)
+  (match (symbol->immutable-string (syntax->datum stx))
+    [(regexp #rx"^(.+)\\?$" (list _ attr-str))
+     (with-syntax ([attr (datum->syntax stx (string->symbol attr-str) stx)])
+       #'['attr attr #:default #f])]
+    [_ #`['#,stx #,stx]]))

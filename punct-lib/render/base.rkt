@@ -48,29 +48,28 @@
         [(? string?) elem]
           
         ;; CommonMark block-level content
-        [`(heading ((level ,lev)) . ,elems) (render-heading lev (render-elements elems))]
-        [`(paragraph . ,elems) (render-paragraph (render-elements elems))]
-        [`(blockquote . ,elems) (render-blockquote (render-elements elems))]
-        [`(code-block [[info ,info]] . ,elems) (render-code-block info elems)]
-        [`(itemization [[style ,style] [start ,start]] . ,elems) (render-itemization style start (render-elements elems))]
-        [`(item . ,elems) (render-item (render-elements elems))]
-        ['(thematic-break) (render-thematic-break)]
-        [`(html-block ,elem) (render-html-block elem)]
+        [(tx* 'heading (level) elems) (render-heading level (render-elements elems))]
+        [(tx* 'paragraph elems) (render-paragraph (render-elements elems))]
+        [(tx* 'blockquote elems) (render-blockquote (render-elements elems))]
+        [(tx* 'code-block (info) elems) (render-code-block info elems)]
+        [(tx* 'itemization (style start) elems) (render-itemization style start (render-elements elems))]
+        [(tx* 'item elems) (render-item (render-elements elems))]
+        [(tx* 'thematic-break _) (render-thematic-break)]
+        [(tx* 'html-block elem) (render-html-block elem)]
 
         ;; CommonMark inline content
-        [`(link [[dest ,dest] [title ,title]] . ,elems) (render-link dest title (render-elements elems))]
-        [`(italic . ,elems) (render-italic (render-elements elems))]
-        [`(bold . ,elems) (render-bold (render-elements elems))]
-        [`(code . ,elems) (render-code (render-elements elems))]
-        [`(image [[src ,src] [title ,title] [desc ,desc]] . ,elems) (render-image src title desc elems)]
-        [`(footnote-reference [[label ,label] [defn-num ,defn-num] [ref-num ,ref-num]])
+        [(tx* 'link (dest title?) elems) (render-link dest title (render-elements elems))]
+        [(tx* 'italic elems) (render-italic (render-elements elems))]
+        [(tx* 'bold elems) (render-bold (render-elements elems))]
+        [(tx* 'code elems) (render-code (render-elements elems))]
+        [(tx* 'image (src title? desc?) elems) (render-image src title desc elems)]
+        [(tx* 'footnote-reference (label defn-num ref-num) _)
          (render-footnote-reference label defn-num ref-num)]
-        ['(line-break) (render-line-break)]
-        [`(html ,elem) (render-html elem)]
+        [(tx* 'line-break _) (render-line-break)]
+        [(tx* 'html elem) (render-html elem)]
 
         ;; Other
-        [(list* (? symbol? tag) (list (? attr? attrs) ...) elems) (render-fallback tag attrs (render-elements elems))]
-        [(list* (? symbol? tag) elems) (render-fallback tag '() (render-elements elems))]))
+        [(txexpr tag attrs elems) (render-fallback tag attrs (render-elements elems))]))
     
     (super-new)))
 
