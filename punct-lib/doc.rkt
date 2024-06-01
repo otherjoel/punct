@@ -2,8 +2,9 @@
 
 ; SPDX-License-Identifier: BlueOak-1.0.0
 ; This file is licensed under the Blue Oak Model License 1.0.0.
+(require "private/quasi-txpr.rkt")
 
-(provide (struct-out document) meta-ref)
+(provide (struct-out document) meta-ref block-element? inline-element?)
 
 #| Punct’s document structure is very similar to Commonmark’s,
    except that it is prefab and uses simple lists instead of
@@ -17,3 +18,24 @@
 
 (define (meta-ref doc key)
   (hash-ref (document-metas doc) key #f))
+
+;; These functions are not actually used in punct-lib. They exist only to have some clear
+;; predicates for use in the documentation.
+;;
+(define (block-element? v)
+  (and (quasi/txexpr? v)
+       (member (car v) '(heading
+                         paragraph
+                         itemization
+                         item
+                         blockquote
+                         code-block
+                         html-block
+                         thematic-break
+                         footnote-definition))
+       #t))
+
+(define (inline-element? v)
+  (or (string? v)
+      (and (quasi/txexpr? v)
+           (not (block-element? v)))))

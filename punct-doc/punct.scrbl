@@ -5,12 +5,16 @@
                      punct/doc
                      punct/fetch
                      punct/parse
+                     punct/render/base
                      punct/render/html
                      punct/render/plaintext
                      racket/base
+                     racket/class
                      racket/contract/base
                      racket/match
-                     (only-in xml xexpr?)])
+                     (only-in xml xexpr?)
+                     (only-in txexpr txexpr? txexpr-tag? txexpr-attr? txexpr-element?)])
+
 @(require scribble/examples "tools.rkt")
 @(define ev (sandbox))
 
@@ -139,14 +143,236 @@ Results in:
                               (item "DOWN")))
               ())]
 
-@section{Custom elements}
+@section{Writing Punct}
+
+Start your Punct source file with @racketmodfont{#lang punct}. Then just write in
+CommonMark-flavored Markdown.
+
+Punct allows inline Racket code that follows @secref["reader" #:doc '(lib
+"scribblings/scribble/scribble.scrbl")] but with the @litchar{•} “bullet” character (@tt{U+2022}) as
+the control character instead of @litchar{@"@"}.  On Mac OS, you can type this using @tt{ALT+8}.
+
+Punct source files automaticaly @racket[provide] two bindings: @racketidfont{doc} (a
+@racket[document]) and @racketidfont{metas} (a hash table).
+
+@subsection{Using @racket[require]}
+
+By default, Punct programs have access to the bindings in @racketmodname[racket/base] and
+@racketmodname[punct/core]. You can import bindings from other modules in two ways:
+
+@itemlist[#:style 'ordered
+
+@item{By using @racket[require] as you usually would, or}
+
+@item{By adding one or more @secref["module-paths" #:doc '(lib "scribblings/guide/guide.scrbl")]
+directly on the @hash-lang[] line.}]
+
+@codeblock{
+ #lang punct "my-module.rkt" racket/math
+
+ •; All bindings in "my-module.rkt" and racket/math are now available
+ •; You can also just use require normally
+ •(require racket/string)
+}
+
+@subsection[#:tag "metas block"]{Metadata block}
+
+Sources can optionally add metadata using key: value lines delimited by lines consisting only of
+consecutive hyphens:
+
+@codeblock{
+ #lang punct
+ ---
+ title: Prepare to be amazed
+ date: 2020-05-07
+ ---
+
+ Regular content goes here
+}
+
+This is a syntactic convenience that comes with a few rules and limitations:
+
+@itemlist[#:style 'compact
+
+@item{The metadata block must be the first non-whitespace thing that follows the
+@racketmodfont{#lang} line.}
+
+@item{The values will always be parsed as flat strings.}
+
+@item{The reader will not evaluate any escaped code inside the metadata block; all characters in the
+keys and values will be used verbatim.}]
+
+If you want to use non-string values, or the results of expressions, in your metadata, you can use
+the @racket[set-meta] function anywhere in the document or in code contained in other modules.
+Within the document body you can also use the @racket[?] macro as shorthand for @racket[set-meta].
+
+@subsection{Markdown and Racket}
+
+When evaluating a source file, Punct does things in this order:
+
+@itemlist[#:style 'ordered
+
+@item{The metadata block is parsed and its values added to @racket[current-metas].}
+
+@item{Any inline Racket expressions are evaluated and replaced with their results. Tagged
+X-expressions are preserved in the final document structure (see @secref{custom}). Any non-string
+value other than a list, and any list beginning with something other than a symbol, is coerced into
+a string.}
+
+@item{The entire document is run through the @racketmodname[commonmark] parser, producing a
+@racket[document] which is bound to @racketidfont{doc}.}
+
+]
+
+@section{Document Structure}
+
+Because it uses the @racketmodname[commonmark] parser as a starting point, Punct documents come with
+a default structure that is fairly opinionated. You can augment this structure if you understand how
+the pieces fit together.
+
+@defmodule[punct/doc]
+
+The bindings provided by this module are also provided by @racketmodname[punct/core].
+
+@defstruct[document ([metas hash-eq?] [body (listof block-element?)] [footnotes (listof block-element?)]) #:prefab]{
+
+A Punct source file evaluates to a @racket[document] struct that includes a @racket[_metas] hash
+table containing any metadata defined using the @secref{metas block}, @racket[?] or
+@racket[set-meta]; and @racket[_body] and @racket[_footnotes], both of which are lists of
+@tech{block elements}.
+
+Behind the scenes: the @racketmodname[commonmark] parser produces a body and footnote definitions in
+the form of nested structs. Punct converts both of these into lists of tagged X-expressions, to
+allow for greater flexibility in adding @secref{custom}.
+
+@history[#:changed "1.0" @elem{@racket[_body] and @racket[_footnotes] now guaranteed to be valid
+X-expressions and not simply lists.}]
+
+}
+
+@subsection{Blocks and Flows}
+
+@defproc[(block-element? (v any/c)) boolean?]{
+
+A @deftech{block element} in Punct is a tagged X-expression which counts as a structural part of a
+document: it starts with one of @racket['heading], @racket['paragraph], @racket['itemization],
+@racket['item], @racket['blockquote], @racket['code-block], @racket['html-block],
+@racket['footnote-definition] or @racket['thematic-break]. At the highest level, a document is a
+sequence of these block elements.
+
+@examples[#:label #f #:eval ev
+(block-element? '(paragraph "Block party!"))
+(block-element? "simple string")
+]
+
+A @deftech{flow} is a list of @tech{block elements}. The Markdown parser produces three block
+elements that may contain flows: @racketid[blockquote], @racketid[item], and
+@racketid[footnote-definition].
+
+}
+
+@deftogether[(
+@defform[#:kind "txexpr" #:literals (level) (heading [[level lev-str]] content ...)
+         #:contracts ([lev-str (or/c "1" "2" "3" "4" "5" "6")]
+                      [content xexpr?])]
+
+@defform[#:kind "txexpr" (paragraph content ...)
+         #:contracts ([content xexpr?])]
+
+@defform[#:kind "txexpr" #:literals (style start)
+         (itemization [[style style-str] [start maybe-start]] item ...)
+         #:contracts ([style-str (or/c "loose" "tight")]
+                      [maybe-start (or/c "" string?)]
+                      [item xexpr?])]
+
+@defform[#:kind "txexpr" (item block ...)
+         #:contracts ([block xexpr?])]
+
+@defform[#:kind "txexpr" (blockquote block ...)
+         #:contracts ([block block-element?])]
+
+@defform[#:kind "txexpr" #:literals (info) (code-block [[info info-str]] content ...)
+         #:contracts ([info-str string?]
+                      [content xexpr?])]
+
+@defform[#:kind "txexpr" (html-block content ...)
+         #:contracts ([content xexpr?])]
+
+@defform[#:kind "txexpr" #:literals (label ref-count)
+         (footnote-definition [[label lbl] [ref-count rcount]] content ...)
+         #:contracts ([lbl string?]
+                      [rcount string?]
+                      [content block-element?])]
+
+@defform[#:kind "txexpr" (thematic-break)]
+
+)]
+
+@subsection{Inline elements}
+
+@defproc[(inline-element? [v any/c]) boolean?]{
+
+An @deftech{inline element} in Punct is a string, or any tagged X-expression that is not counted as
+a @tech{block element}.
+
+@examples[#:label #f #:eval ev
+(inline-element? "simple string")
+(inline-element? '(italic "emphasis"))
+(inline-element? '(made-up-element "x"))
+(inline-element? '(paragraph "Block party!"))
+]
+
+Inline elements that appear on a line by themselves (i.e., not marked up within block elements) are
+automatically wrapped in @racketid[paragraph] elements.
+
+}
+
+Below is a list of the inline elements that can be produced by the Markdown parser.
+
+@deftogether[(
+
+@defform[#:kind "txexpr" (italic content ...)
+         #:contracts ([content inline-element?])]
+
+@defform[#:kind "txexpr" (bold content ...)
+         #:contracts ([content inline-element?])]
+
+@defform[#:kind "txexpr" #:literals (dest title) (link [[dest href] [title title-str]] content ...)
+         #:contracts ([href string?]
+                      [title-str string?]
+                      [content inline-element?])]
+
+@defform[#:kind "txexpr" (code content ...)
+         #:contracts ([content inline-element?])]
+
+@defform[#:kind "txexpr" #:literals (src title desc)
+        (image [[src source] [title title-str] [desc description]])
+        #:contracts ([source string?]
+                     [title-str string?]
+                     [description string?])]
+
+@defform[#:kind "txexpr" (html content ...)
+         #:contracts ([content inline-element?])]
+
+@defform[#:kind "txexpr" #:literals (label defn-num ref-num)
+        (footnote-reference [[label lbl] [defn-num dnum] [ref-num rnum]])
+        #:contracts ([lbl string?]
+                     [dnum string?]
+                     [rnum string?])]
+
+@defform[#:kind "txexpr" (line-break)]
+
+)]
+
+@subsection[#:tag "custom"]{Custom elements}
 
 You can use Racket code to introduce new elements to the document’s structure.
 
-A @deftech{custom element} is an @racket[xexpr?] that begins with a symbol other than those produced
-by the Markdown parser. A custom element may optionally have a set of @deftech{attributes}, which is
-a list of key/value pairs that appears as the second item in the list. The keys must be symbols and
-the values must be strings, or an exception is raised.
+A @deftech{custom element} is any list that begins with a symbol other than those produced by the
+Markdown parser. 
+
+A custom element may optionally have a set of @deftech{attributes}, which is a list of key/value
+pairs that appears as the second item in the list. 
 
 Here is an example of a function that produces a custom @tt{abbreviation} element with a @tt{term}
 attribute:
@@ -171,22 +397,6 @@ Produces:
              ())
 ]
 
-@subsection{Inline and Block Content}
-
-Any @tech{custom elements} you introduce need to play nicely with CommonMark’s @secref["structure"
-#:doc '(lib "scribblings/commonmark.scrbl")], in particular its distinction between @secref["blocks"
-#:doc '(lib "scribblings/commonmark.scrbl")] and @secref["inlines" #:doc '(lib
-"scribblings/commonmark.scrbl")].
-
-@itemlist[
-
-@item{Inline content must be contained in a block and can only contain other inline content. If
-found on a line by itself, inline content will be automatically wrapped in a @tt{paragraph} block
-element. Italics and links are examples of inline content.}
-
-@item{Blocks can contain other blocks as well as inline content, and will not be auto-wrapped in
-@tt{paragraph} elements. Paragraphs and headings are examples of block content.}]
-
 By default, Punct will treat custom elements as inline content.
 
 If you want a custom element to count as a block (that is, to avoid having it auto-wrapped inside
@@ -197,18 +407,16 @@ a @tt{paragraph} element), you must give it a @racket['block] attribute with a v
 
 @item{@racket["root"] should be used for blocks that might contain other block elements.
 @bold{Limitations:} @racket["root"]-type blocks cannot be contained inside Markdown-created
-@tech[#:doc '(lib "scribblings/commonmark.scrbl")]{flows} (such as block quotations notated using
-@litchar{>}); if found inside such a flow, they will “escape” out to the root level of the
-document.}
+@tech{flows} (such as block quotations notated using @litchar{>}); if found inside such a flow, they
+will “escape” out to the root level of the document.}
 
 @item{@racket["single"] should be used for block elements that might need to be contained within
-Markdown-created @tech[ #:doc '(lib "scribblings/commonmark.scrbl")]{flows}. @bold{Limitations:}
-@racket["single"]-type blocks must appear on their own line or lines in order to be counted as
-blocks.}]
+Markdown-created @tech{flows}. @bold{Limitations:} @racket["single"]-type blocks must appear on
+their own line or lines in order to be counted as blocks.}]
 
-If that seems complicated, think of it this way: there are three kinds of flows that you can notate
-with Markdown: block quotes, list items, and footnote definitions. If your custom block element
-might appear as a direct child of any of those three Markdown notations, you should probably start
+If that seems complicated, think of it this way: there are three kinds of @tech{flows} that you can
+notate with Markdown: block quotes, list items, and footnote definitions. If your custom block
+element might appear as a child of any of those three Markdown notations, you should probably start
 by giving it the @racket['(block "single")] attribute.
 
 You’ll never get an error for using the wrong @racket['block] type on your custom elements; you’ll
@@ -247,82 +455,24 @@ element (from the examples above) into HTML:
 
 ]
 
-@section{Writing Punct}
-
-Start your Punct source file with @racketmodfont{#lang punct}. Then just write in
-CommonMark-flavored Markdown.
-
-Punct allows inline Racket code that follows @secref["reader" #:doc '(lib
-"scribblings/scribble/scribble.scrbl")] but with the @litchar{•} “bullet” character (@tt{U+2022}) as
-the control character instead of @litchar{@"@"}.  On Mac OS, you can type this using @tt{ALT+8}.
-
-Punct source files automaticaly @racket[provide] two bindings: @racketidfont{doc} (a
-@racket[document]) and @racketidfont{metas} (a hash table).
-
-@subsection{Using @racket[require]}
-
-By default, Punct programs have access to the bindings in @racketmodname[racket/base] and
-@racketmodname[punct/core]. You can import bindings from other modules in two ways:
-
-@itemlist[#:style 'ordered
-
-@item{By using @racket[require] as you usually would, or}
-
-@item{By adding one or more @secref["module-paths" #:doc '(lib "scribblings/guide/guide.scrbl")]
-directly on the @hash-lang[] line.}]
-
-@codeblock{
- #lang punct "my-module.rkt" racket/math
-
- •; All bindings in "my-module.rkt" and racket/math are now available
- •; You can also just use require normally
- •(require racket/string)
-}
-
-@subsection{Metadata block}
-
-Sources can optionally add metadata using key: value lines delimited by lines consisting only of
-consecutive hyphens:
-
-@codeblock{
- #lang punct
- ---
- title: Prepare to be amazed
- date: 2020-05-07
- ---
-
- Regular content goes here
-}
-
-This is a syntactic convenience that comes with a few rules and limitations:
-
-@itemlist[#:style 'compact
-
-@item{The metadata block must be the first non-whitespace thing that follows the
-@racketmodfont{#lang} line.}
-
-@item{The values will always be parsed as flat strings.}
-
-@item{The reader will not evaluate any escaped code inside the metadata block; all characters in the
-keys and values will be used verbatim.}]
-
-If you want to use non-string values, or the results of expressions, in your metadata, you can use
-the @racket[set-meta] function anywhere in the document or in code contained in other modules.
-Within the document body you can also use the @racket[?] macro as shorthand for @racket[set-meta].
-
-@section{Rendering}
+@section{Rendering Output}
 
 A Punct document is format-independent; when you want to use it in an output file, it must be
 rendered into that output file’s format.
 
-Punct includes an HTML renderer and a plain-text renderer, and is designed to include renderers for
-more formats in the future.
+Punct currently includes an HTML renderer and a plain-text renderer. Both are based on a “base”
+renderer. You can extend any Punct renderer or the base renderer to customize the process of
+converting @racket[document]s to your target output format(s).
 
 @subsection{Rendering HTML}
 
 @defmodule[punct/render/html]
 
-@defproc[(doc->html [pdoc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) string?]{
+@defproc[(doc->html [pdoc document?] 
+                    [fallback (-> txexpr-tag? 
+                                  (listof txexpr-attr?) 
+                                  (listof txexpr-element?) xexpr?) default-html-tag])
+         string?]{
 
 Renders @racket[_pdoc] into a string containing HTML markup. Each @tech{custom element} is passed to
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
@@ -332,7 +482,11 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 }
 
-@defproc[(doc->html-xexpr [pdoc document?] [fallback (-> symbol? list? list? xexpr?) default-html-tag]) xexpr?]{
+@defproc[(doc->html-xexpr [pdoc document?] 
+                          [fallback (-> txexpr-tag? 
+                                        (listof txexpr-attr?) 
+                                        (listof txexpr-element?) xexpr?) default-html-tag])
+         xexpr?]{
 
 Renders @racket[_pdoc] into HTML, but in @racketlink[xexpr?]{X-expression} form rather than as a
 string. Each @tech{custom element} is passed to @racket[_fallback], which must itself return an
@@ -343,7 +497,9 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 }
 
-@defproc[(default-html-tag [tag symbol?] [attributes (listof (listof symbol? string?))] [elements list?]) xexpr?]{
+@defproc[(default-html-tag [tag txexpr-tag?] 
+                           [attributes (listof txexpr-attr?)] 
+                           [elements (listof txexpr-element?)]) xexpr?]{
 
 Returns an X-expression comprised of @racket[_tag], @racket[_attributes] and @racket[_elements].
 Mainly used as the default fallback procedure for @racket[doc->html].
@@ -363,8 +519,11 @@ as when generating the plaintext version of an email newsletter.
 
 @defproc[(doc->plaintext [pdoc document?]
                          [line-width exact-nonnegative-integer?]
-                         [fallback (symbol? (listof (listof symbol? string?)) list? . -> . string?)
-                                   (make-plaintext-fallback line-width)]) string?]{
+                         [fallback (-> txexpr-tag? 
+                                       (listof txexpr-attr?) 
+                                       (listof txexpr-element?) xexpr?)
+                                   (make-plaintext-fallback line-width)])
+                         string?]{
 
 Renders @racket[_pdoc] into a string of plain text, hard-wrapped to @racket[_line-width] characters
 (except for block-quotes, which are hard-wrapped to a length approximately 75% as long as
@@ -454,21 +613,6 @@ is given as a bare identifier (i.e., without using @racket[quote]).
 
 }
 
-@subsection{Doc}
-
-@defmodule[punct/doc]
-
-The bindings provided by this module are also provided by @racketmodname[punct/core].
-
-@defstruct[document ([metas hash-eq?] [body (listof xexpr?)] [footnotes (listof xexpr?)]) #:prefab]{
-
-A parsed Punct document.
-
-@history[#:changed "1.0" @elem{@racket[_body] and @racket[_footnotes] now guaranteed to be valid
-X-expressions and not simply lists.}]
-
-}
-
 @subsection{Fetch}
 
 @defmodule[punct/fetch]
@@ -494,18 +638,18 @@ will get a friendly error message. If any other kind of problem arises, you will
 @defmodule[punct/parse]
 
 @defproc[(parse-markup-elements [metas hash-eq?]
-                                [elements list?]
+                                [elements list]
                                 [#:extract-inline? extract? #t]
                                 [#:parse-footnotes? parse-fn? #f])
-         (or/c document? list?)]{
+         (or/c document? (listof txexpr-element?))]{
 
-Parses @racket[_elements] into a Punct AST by serializing everything as a string, sending the string
+Parses @racket[_elements] into a Punct AST by serializing everything as strings, sending the string
 through the @racketmodname[commonmark] parser, and then converting the result into a Punct
 @racket[document], reconstituting any @tech{custom elements} in the process.
 
 If @racket[#:extract-inline?] is @racket[#true], and if the parsed document contains only a single
-@tt{paragraph} element at the root level, then the inline content of the paragraph is returned as
-a list. Otherwise, the entire result is returned as a @racket[document].
+@tt{paragraph} element at the root level, then the elements inside the paragraph are returned as a
+list (the paragraph is “shucked”). Otherwise, the entire result is returned as a @racket[document].
 
 The @racket[#:parse-footnotes?] argument determines whether the @racketmodname[commonmark] parser
 will parse Markdown-style footnote references and definitions in @racket[_elements].
@@ -547,9 +691,10 @@ a @link["https://www.gnu.org/software/make/manual/html_node/Introduction.html"]{
 
 @item{Punct does not provide a “preprocessor” dialect.}
 
-@item{Punct does not offer any tools for ordering content, or for navigation. (But of course, you
-can still use Pollen’s @seclink["Pagetree" #:indirect? #t #:doc '(lib
-"pollen/scribblings/pollen.scrbl")]{pagetrees} or some scheme of your own.)}
+@item{Punct does not offer any tools for gathering multiple sources into ordered collections, or for
+navigation between multiple sources. (But of course, you can still use Pollen’s @seclink["Pagetree"
+#:indirect? #t #:doc '(lib "pollen/scribblings/pollen.scrbl")]{pagetrees} or some scheme of your
+own.)}
 
 @item{Punct generally eschews contracts and makes almost no effort to provide friendly error
 messages.}
@@ -557,6 +702,12 @@ messages.}
 @item{Punct does not search through your filesystem for a @filepath{pollen.rkt} or other special
 file to auto-require into your source files. This means there is also no “setup module” mechanism
 for customizing Punct’s behavior.}
+
+@item{Punct comes with a default, opinionated document structure. This might save you a bit of work,
+but if you want full control over the structure of your document, you should use Pollen instead.}
+
+@item{Pollen allows you to use any tag in your markup without defining it in advance. In Punct, this
+will result in an error. (This may change in the future.)}
 
 @item{Where Pollen’s documentation is generous and patient and does not assume any familiarity with
 Racket, Punct’s documentation is clipped, and kind of assumes you know what you’re doing.}
