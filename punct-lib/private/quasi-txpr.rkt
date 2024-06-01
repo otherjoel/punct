@@ -3,41 +3,43 @@
 ; SPDX-License-Identifier: BlueOak-1.0.0
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 
-#| “Tagged S-expressions”
-   are like tagged x-expressions, in that they are lists that begin with a
-   symbol, and whose second element may be a list of attributes (key/value
-   pairs whose key is a symbol). But tagged s-expressions do not restrict
-   attribute values to strings, and their elements can be literally anything.
-|#
-
 (require racket/match
          txexpr)
 
 (provide (all-defined-out))
 (provide txexpr)
 
-(define (attr? v)
+(define (->string v)
+  (cond
+    [(string? v) v]
+    [(or (symbol? v) (number? v) (boolean? v) (char? v) (path? v)) (format "~a" v)]
+    [(or (null? v) (void? v)) ""]
+    [else (format "~v" v)]))
+
+(define (->safe-attr a)
+  `(,(car a) ,(->string (cadr a))))
+
+;; “Quasi” here signifies intentional laziness. These are quick resemblence checks, not
+;; rigorous recursive validation.
+(define (quasi/txexpr? v)   
+  (and (list? v)
+       (symbol? (car v))))
+
+(define (quasi/attr? v)
   (and (list? v)
        (symbol? (car v))
        (not (null? (cdr v)))
        (null? (cddr v))))
 
-(define (safe-attr? v)
-  (and (list? v)
-       (symbol? (car v))
-       (not (null? (cdr v)))
-       (null? (cddr v))
-       (string? (cadr v))))
-
-(define (attr-ref v key)
-  (match v
-    [(list-no-order (list (== key) val) attrs ...) val]
+(define (ref-attr attrs v)
+  (match (assoc v attrs)
+    [(list key val) val]
     [_ #f]))
 
-(define (tsexpr->values lst)
+(define (quasi/txexpr->values lst)
   (match lst
-    [(list* (? symbol? tag) (list (? attr? attrs) ...) elems)
-     (values tag attrs elems)]
+    [(list* (? symbol? tag) (list (? quasi/attr? attrs) ...) elems)
+     (values tag (map ->safe-attr attrs) elems)]
     [(list* (? symbol? tag) elems)
      (values tag '() elems)]))
 

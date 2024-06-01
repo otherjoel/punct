@@ -7,8 +7,9 @@
 
 (require (for-syntax racket/base racket/sequence)
          "doc.rkt"
-         "private/tsexp.rkt")
-(provide attr-ref
+         "private/quasi-txpr.rkt")
+
+(provide ref-attr
          (all-defined-out)
          (all-from-out "doc.rkt"))
 

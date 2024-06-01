@@ -4,7 +4,7 @@
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 
 (require "constants.rkt"
-         "tsexp.rkt"
+         "quasi-txpr.rkt"
          racket/format
          racket/list
          racket/match
@@ -82,22 +82,17 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
   (let* ([strs (string-split (xexpr->string `(,(mark-tag tag) ,attrs)) "><")]
          [opener (~a (car strs) ">")]
          [closer (~a "<" (cadr strs))]
-         [block-delim (if (equal? (attr-ref attrs 'block) punct-block-multi) "\n\n" "")])
+         [block-delim (if (equal? (ref-attr attrs 'block ) punct-block-multi) "\n\n" "")])
     (values opener closer block-delim)))
 
 ;; Convert a tagged s-expression to a flat string
 (define (flatpack v)
   (cond
-    [(string? v) v]
-    [(or (symbol? v) (number? v) (boolean? v) (char? v) (path? v)) (format "~a" v)]
-    [(or (null? v) (void? v)) ""]
-    [(and (list? v) (symbol? (car v)))
-     (define-values (tag attrs elems) (tsexpr->values v))
-     (unless (andmap safe-attr? attrs) (error 'punct "Attributes must be symbol-string pairs: ~a" attrs))
+    [(not (quasi/txexpr? v)) (->string v)]
+    [else
+     (define-values (tag attrs elems) (quasi/txexpr->values v))
      (define-values (tag-open tag-close block-delim) (make-open/close-html-tags tag attrs))
-     (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]
-    [(procedure? v) (error 'punct "Procedure ~a not a valid value" v)]
-    [else (format "~v" v)]))
+     (string-append* `(,block-delim ,tag-open ,block-delim ,@(map flatpack elems) ,block-delim ,tag-close ,block-delim))]))
 
 ;; Return #t if v is a marked html delimiter
 (define (html-delim? v)
@@ -117,7 +112,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 
 (define (assemble-sexpr opener maybe-closer elems)
   (define closer (or maybe-closer (synthesize-closer opener)))
-  (define-values (ptag attrs e) (tsexpr->values (string->xexpr (string-append (cadr opener) (cadr closer)))))
+  (define-values (ptag attrs e) (quasi/txexpr->values (string->xexpr (string-append (cadr opener) (cadr closer)))))
   (define tag (unmark-tag ptag))
   ;; if this is a block-expression and the only element is a paragraph, shuck the paragraph
   (define new-elems
