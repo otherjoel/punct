@@ -625,13 +625,25 @@ get a friendly error message. If any other kind of problem arises, you will get 
 
 }
 
-@defproc[(get-doc-ref [src path-string?] [key symbol?]) any/c]{
+@defproc[(get-meta [doc document?]
+                   [key symbol?]
+                   [default failure-result/c (lambda () (raise (make-exn:fail ....)))])
+         any/c]{
 
-Returns the value of @racket[_key] in the @racketidfont{metas} hash table provided by @racket[_src],
-or @racket[#f] if the key does not exist in that hash table. If @racket[_src] does not exist, you
-will get a friendly error message. If any other kind of problem arises, you will get an ugly error.
+Returns the value of @racket[_key] in the @racket[document-metas] of @racket[_doc].
+The value of @racket[_default] is used if the key does not exist: if it is a value, that value will be
+returned instead; if it is a thunk, the thunk will be called.
+
+@history[#:changed "1.1" @elem{Removed @racketidfont{get-doc-ref} and replaced with @racket[get-meta]}]
 
 }
+
+@defproc[(meta-ref [doc document?] [key symbol?]) any/c]{
+
+Equivalent to @racket[(get-meta doc key #f)]. Provided for compatibility.
+                                                         
+}
+         
 
 @subsection{Parse}
 
