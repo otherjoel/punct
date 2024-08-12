@@ -7,7 +7,6 @@
          txexpr)
 
 (provide (all-defined-out))
-(provide txexpr)
 
 (define (->string v)
   (cond
