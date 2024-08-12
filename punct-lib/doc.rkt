@@ -4,7 +4,7 @@
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 (require "private/quasi-txpr.rkt")
 
-(provide (struct-out document) meta-ref block-element? inline-element?)
+(provide (struct-out document) block-element? inline-element?)
 
 #| Punct’s document structure is very similar to Commonmark’s,
    except that it is prefab and uses simple lists instead of
@@ -15,9 +15,6 @@
 |#
 
 (struct document (metas body footnotes) #:prefab)
-
-(define (meta-ref doc key)
-  (hash-ref (document-metas doc) key #f))
 
 ;; These functions are not actually used in punct-lib. They exist only to have some clear
 ;; predicates for use in the documentation.
