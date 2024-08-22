@@ -6,7 +6,7 @@
 (require racket/match
          txexpr)
 
-(provide (all-defined-out))
+(provide (all-defined-out) txexpr)
 
 (define (->string v)
   (cond

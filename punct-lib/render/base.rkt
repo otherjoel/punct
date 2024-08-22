@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../private/tsexp.rkt"
+(require "../private/quasi-txpr.rkt"
          "../doc.rkt"
          racket/class
          racket/match)
