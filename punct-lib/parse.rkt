@@ -19,7 +19,8 @@
          threading)
 
 (provide punct-debug
-         parse-markup-elements)
+         parse-markup-elements
+         splice)
 
 (define punct-debug (make-parameter #f))
 
