@@ -69,7 +69,7 @@
         [(tx* 'html elem) (render-html elem)]
 
         ;; Other
-        [(txexpr tag attrs elems) (render-fallback tag attrs (render-elements elems))]))
+        [(quasi/txexpr tag attrs elems) (render-fallback tag attrs (render-elements elems))]))
     
     (super-new)))
 

@@ -12,8 +12,7 @@
                      racket/class
                      racket/contract/base
                      racket/match
-                     (only-in xml xexpr?)
-                     (only-in txexpr txexpr? txexpr-tag? txexpr-attr? txexpr-element?)])
+                     (only-in xml xexpr? xexpr->string)])
 
 @(require scribble/examples "tools.rkt")
 @(define ev (sandbox))
@@ -469,13 +468,19 @@ converting @racket[document]s to your target output format(s).
 @defmodule[punct/render/html]
 
 @defproc[(doc->html [pdoc document?] 
-                    [fallback (-> txexpr-tag? 
-                                  (listof txexpr-attr?) 
-                                  (listof txexpr-element?) xexpr?) default-html-tag])
+                    [fallback (-> symbol?
+                                  (listof (list/c symbol? string?)) 
+                                  (listof xexpr?)
+                                  xexpr?) default-html-tag])
          string?]{
 
 Renders @racket[_pdoc] into a string containing HTML markup. Each @tech{custom element} is passed to
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
+
+This function uses @racket[xexpr->string] to generate the HTML string. This function will blindly
+escape characters inside @racketoutput{<script>} and @racketoutput{<style>} tags, which may introduce
+errors. For HTML output that is friendlier and more correct, consider using the
+@racketmodname[html-printer #:indirect] package in concert with @racket[doc->html-xexpr].
 
 For more information on using the @racket[_fallback] argument to render custom elements, see
 @secref["rendering-custom-elements"].
@@ -483,9 +488,10 @@ For more information on using the @racket[_fallback] argument to render custom e
 }
 
 @defproc[(doc->html-xexpr [pdoc document?] 
-                          [fallback (-> txexpr-tag? 
-                                        (listof txexpr-attr?) 
-                                        (listof txexpr-element?) xexpr?) default-html-tag])
+                          [fallback (-> symbol? 
+                                        (listof (list/c symbol? string?)) 
+                                        (listof xexpr?)
+                                        xexpr?) default-html-tag])
          xexpr?]{
 
 Renders @racket[_pdoc] into HTML, but in @racketlink[xexpr?]{X-expression} form rather than as a
@@ -497,9 +503,10 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 }
 
-@defproc[(default-html-tag [tag txexpr-tag?] 
-                           [attributes (listof txexpr-attr?)] 
-                           [elements (listof txexpr-element?)]) xexpr?]{
+@defproc[(default-html-tag [tag symbol?] 
+                           [attributes (listof (list/c symbol? string?))] 
+                           [elements (listof xexpr?)])
+         xexpr?]{
 
 Returns an X-expression comprised of @racket[_tag], @racket[_attributes] and @racket[_elements].
 Mainly used as the default fallback procedure for @racket[doc->html].
@@ -519,9 +526,10 @@ as when generating the plaintext version of an email newsletter.
 
 @defproc[(doc->plaintext [pdoc document?]
                          [line-width exact-nonnegative-integer?]
-                         [fallback (-> txexpr-tag? 
-                                       (listof txexpr-attr?) 
-                                       (listof txexpr-element?) xexpr?)
+                         [fallback (-> symbol? 
+                                       (listof (list/c symbol? string?)) 
+                                       (listof xexpr?)
+                                       xexpr?)
                                    (make-plaintext-fallback line-width)])
                          string?]{
 
@@ -653,7 +661,7 @@ Equivalent to @racket[(get-meta doc key #f)]. Provided for compatibility.
                                 [elements list]
                                 [#:extract-inline? extract? #t]
                                 [#:parse-footnotes? parse-fn? #f])
-         (or/c document? (listof txexpr-element?))]{
+         (or/c document? (listof xexpr?))]{
 
 Parses @racket[_elements] into a Punct AST by serializing everything as strings, sending the string
 through the @racketmodname[commonmark] parser, and then converting the result into a Punct

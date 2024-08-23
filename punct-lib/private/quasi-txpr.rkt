@@ -3,10 +3,11 @@
 ; SPDX-License-Identifier: BlueOak-1.0.0
 ; This file is licensed under the Blue Oak Model License 1.0.0.
 
-(require racket/match
-         txexpr)
+(require racket/match)
 
-(provide (all-defined-out) txexpr)
+(require (for-syntax racket/base))
+
+(provide (all-defined-out))
 
 (define (->string v)
   (cond
@@ -22,6 +23,7 @@
 ;; rigorous recursive validation.
 (define (quasi/txexpr? v)   
   (and (list? v)
+       (not (null? v))
        (symbol? (car v))))
 
 (define (quasi/attr? v)
@@ -42,13 +44,22 @@
     [(list* (? symbol? tag) elems)
      (values tag '() elems)]))
 
+(define (quasi/attrs->hash attrs)
+  (for/hasheq ([kvpair (in-list (reverse attrs))])
+    (apply values kvpair)))
+
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;; Match expander
 
 (require (for-syntax racket/base
                      racket/match
-                     racket/symbol
-                     txexpr))
+                     racket/symbol))
+
+(define-match-expander quasi/txexpr
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ tag-pat attrs-pat elements-pat)
+       #'(? quasi/txexpr? (app quasi/txexpr->values tag-pat attrs-pat elements-pat))])))
 
 ;; A match expander for txexprs that allows matching optional attributes
 ;; Example:
@@ -60,9 +71,9 @@
       [(_ tag-pat (attr ...) elem-pat)
        (with-syntax ([(hash-key ...)
                       (map maybe-optional-key (syntax->list #'(attr ...)))])
-         #'(txexpr tag-pat (app attrs->hash (hash* hash-key ...)) elem-pat))]
+         #'(quasi/txexpr tag-pat (app quasi/attrs->hash (hash* hash-key ...)) elem-pat))]
       [(_ tag-pat elem-pat)
-       #'(txexpr tag-pat _ elem-pat)])))
+       #'(quasi/txexpr tag-pat _ elem-pat)])))
 
 ;; Converts identifiers into hash* match patterns
 ;; id → ['id id]

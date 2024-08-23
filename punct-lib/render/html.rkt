@@ -13,7 +13,6 @@
          racket/match
          racket/string
          threading
-         txexpr
          (only-in xml xexpr->string))
 
 (provide punct-html-render%
@@ -98,7 +97,7 @@
   (send (new punct-html-render% [doc doc] [render-fallback fallback]) render-document))
 
 (define (doc->html doc [fallback default-html-tag])
-  (xexpr->html (doc->html-xexpr doc fallback)))
+  (xexpr->string (doc->html-xexpr doc fallback)))
 
 (define (default-html-tag tag attrs elems)
   `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))
