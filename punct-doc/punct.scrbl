@@ -42,6 +42,11 @@ instructions are at the project’s @link["https://github.com/otherjoel/punct"]{
 I have designed Punct for my own use and creative needs. If you would like Punct to work differently
 or support some new feature, I encourage you to fork it and customize it yourself.
 
+@margin-note{If you decide to rely on Punct in any kind of “production” capacity, you should make
+sure to monitor the
+@link["https://github.com/otherjoel/punct/discussions/categories/announcements"]{Announcements} area
+of the GitHub repository. Any significant changes will be announced there first.}
+
 This documentation assumes you are familiar with Racket, and with @racketlink[xexpr?]{X-expressions}
 and associated terms (attributes, elements, etc).
 
