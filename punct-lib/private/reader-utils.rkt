@@ -99,5 +99,14 @@
        [else
         (define kv (regexp-match #px"^\\s*([^:]+[\\S])\\s*:\\s*(.+[\\S])\\s*$" line))
         (cond
-          [(list? kv) (loop (cons `',(string->symbol (cadr kv)) (cons (caddr kv) kvs)))]
-          [else (balk! name in "Line does not contain : in metas block")])]))))
+          [(list? kv)
+           (define k (cadr kv))
+           (define v (caddr kv))
+           (if (char=? #\' (string-ref v 0))
+               (loop (cons `',(string->symbol k) (cons (read-meta-datum v name in) kvs)))
+               (loop (cons `',(string->symbol k) (cons v kvs))))]
+          [else (balk! name in "Line in metas block must be of form \"key: value\"")])]))))
+
+(define (read-meta-datum v name in)
+  (with-handlers ([exn:fail:read? (λ (e) (balk! name in (exn-message e)))])
+    (read (open-input-string v))))

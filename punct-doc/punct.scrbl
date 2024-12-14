@@ -181,14 +181,15 @@ directly on the @hash-lang[] line.}]
 
 @subsection[#:tag "metas block"]{Metadata block}
 
-Sources can optionally add metadata using key: value lines delimited by lines consisting only of
-consecutive hyphens:
+Sources can optionally add metadata using @racketvalfont{key: value} lines, delimited by lines
+consisting only of consecutive hyphens:
 
 @codeblock{
  #lang punct
  ---
  title: Prepare to be amazed
  date: 2020-05-07
+ draft?: '#t
  ---
 
  Regular content goes here
@@ -201,14 +202,20 @@ This is a syntactic convenience that comes with a few rules and limitations:
 @item{The metadata block must be the first non-whitespace thing that follows the
 @racketmodfont{#lang} line.}
 
-@item{The values will always be parsed as flat strings.}
+@item{Each value will always be parsed as a flat string --- or, if prefixed with a single quote
+@litchar{'}, as a simple datum (using @racket[read]).}
 
-@item{The reader will not evaluate any escaped code inside the metadata block; all characters in the
-keys and values will be used verbatim.}]
+]
 
-If you want to use non-string values, or the results of expressions, in your metadata, you can use
-the @racket[set-meta] function anywhere in the document or in code contained in other modules.
-Within the document body you can also use the @racket[?] macro as shorthand for @racket[set-meta].
+Prefixing meta values with @litchar{'} allows you to store booleans and numbers, as well as complex
+values like lists, vectors, hash tables, or anything else that @racket[read] would count as a single
+datum --- but note that code inside the value will not be evaluated.
+
+If you want to use the results of expressions in your metadata, you can use the @racket[set-meta]
+function anywhere in the document or in code contained in other modules. Within the document body
+you can also use the @racket[?] macro as shorthand for @racket[set-meta].
+
+@history[#:changed "1.2" @elem{Added ability to use datums quoted with @litchar{'} in metadata.}]
 
 @subsection{Markdown and Racket}
 
