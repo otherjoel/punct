@@ -209,7 +209,7 @@ This is a syntactic convenience that comes with a few rules and limitations:
 
 Prefixing meta values with @litchar{'} allows you to store booleans and numbers, as well as complex
 values like lists, vectors, hash tables, or anything else that @racket[read] would count as a single
-datum --- but note that code inside the value will not be evaluated.
+datum (and which fits in one line) --- but note that code inside the value will not be evaluated.
 
 If you want to use the results of expressions in your metadata, you can use the @racket[set-meta]
 function anywhere in the document or in code contained in other modules. Within the document body
