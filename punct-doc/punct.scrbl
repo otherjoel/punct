@@ -203,7 +203,8 @@ This is a syntactic convenience that comes with a few rules and limitations:
 @racketmodfont{#lang} line.}
 
 @item{Each value will always be parsed as a flat string --- or, if prefixed with a single quote
-@litchar{'}, as a simple datum (using @racket[read]).}
+@litchar{'}, as a simple datum (using @racket[read]). If more than one datum appears after the
+@litchar{'}, the first will be used and the rest discarded.}
 
 ]
 

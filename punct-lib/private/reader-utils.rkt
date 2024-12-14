@@ -47,9 +47,9 @@
     (define next (peek-char in pos))
     (cond
       [(eof-object? next) (values next 0)]
-      [(equal? next #\newline) (values (list->string chars) 1)]
+      [(equal? next #\newline) (values (list->string (reverse chars)) 1)]
       [(equal? next #\return)
-       (values (list->string chars)
+       (values (list->string (reverse chars))
                (if (equal? #\newline (peek-char in (add1 pos))) 2 1))]
       [else (loop (cons next chars) (add1 pos))])))
 
@@ -91,22 +91,29 @@
    block-start-found?
    (let loop ([kvs '()])
      (save-portloc in)
-     (define line (read-line in 'any))
+     (define-values (line _retlen) (peek-line in))
      (cond
-       [(eof-object? line) kvs]
-       [(regexp-match? #px"^\\s*-{3,}\\s*$" line) kvs]
-       [(regexp-match? #px"^\\s*$" line) (loop kvs)] ; skip empty lines
+       [(eof-object? line) (begin0 kvs (read-line in 'any))]
+       [(regexp-match? #px"^\\s*-{3,}\\s*$" line) (begin0 kvs (read-line in 'any))]
+       [(regexp-match? #px"^\\s*$" line) (read-line in 'any) (loop kvs)] ; skip empty lines
        [else
-        (define kv (regexp-match #px"^\\s*([^:]+[\\S])\\s*:\\s*(.+[\\S])\\s*$" line))
+        ; "key : value:" → '((0 . 12) (0 . 3) (6 . 12))
+        (define kv (regexp-match-positions #px"^\\s*([^:]|\\S[^:]*\\S)\\s*:\\s*(\\S|.*\\S)\\s*$" line))
         (cond
           [(list? kv)
-           (define k (cadr kv))
-           (define v (caddr kv))
-           (if (char=? #\' (string-ref v 0))
-               (loop (cons `',(string->symbol k) (cons (read-meta-datum v name in) kvs)))
-               (loop (cons `',(string->symbol k) (cons v kvs))))]
+           (define k (string->symbol (substring line (caadr kv) (cdadr kv))))
+           (define v (substring line (caaddr kv) (cdaddr kv)))
+           (read-string (car (caddr kv)) in) ; consume to just before start of value
+           (cond
+             [(char=? #\' (string-ref v 0))
+              (loop (cons `',k (cons (read-meta-datum name in) kvs)))]
+             [else
+              (read-line in 'any)
+              (loop (cons `',k (cons v kvs)))])]
           [else (balk! name in "Line in metas block must be of form \"key: value\"")])]))))
 
-(define (read-meta-datum v name in)
+;; Attempt to read a datum only up to the next newline
+(define (read-meta-datum name in)
+  (save-portloc in)
   (with-handlers ([exn:fail:read? (λ (e) (balk! name in (exn-message e)))])
-    (read (open-input-string v))))
+    (read (open-input-string (read-line in 'any)))))
