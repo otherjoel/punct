@@ -42,16 +42,18 @@
 ;;  → The string comprising all characters occuring before \r or \n
 ;;  → The number of characters used in the terminating linefeed: 2 for \r\n, 1 otherwise.
 (define (peek-line in [start 0])
-  (let loop ([chars '()]
+  (define lf 10) ; \n
+  (define cr 13) ; \r
+  (let loop ([line-bytes '()]
              [pos start])
-    (define next (peek-char in pos))
+    (define next (peek-byte in pos))
     (cond
       [(eof-object? next) (values next 0)]
-      [(equal? next #\newline) (values (list->string (reverse chars)) 1)]
-      [(equal? next #\return)
-       (values (list->string (reverse chars))
-               (if (equal? #\newline (peek-char in (add1 pos))) 2 1))]
-      [else (loop (cons next chars) (add1 pos))])))
+      [(equal? next lf) (values (bytes->string/utf-8 (list->bytes (reverse line-bytes))) 1)]
+      [(equal? next cr)
+       (values (bytes->string/utf-8 (list->bytes (reverse line-bytes)))
+               (if (equal? lf (peek-byte in (add1 pos))) 2 1))]
+      [else (loop (cons next line-bytes) (add1 pos))])))
 
 ;; Returns a list of all syntax objects on the port that occur before
 ;; the next newline/EOF. If any datum is not a valid module path, raises an
