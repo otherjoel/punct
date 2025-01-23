@@ -285,39 +285,41 @@ elements that may contain flows: @racketid[blockquote], @racketid[item], and
 }
 
 @deftogether[(
-@defform[#:kind "txexpr" #:literals (level) (heading [[level lev-str]] content ...)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (level)
+         (heading [[level lev-str]] content ...)
          #:contracts ([lev-str (or/c "1" "2" "3" "4" "5" "6")]
                       [content xexpr?])]
 
-@defform[#:kind "txexpr" (paragraph content ...)
+@defform[#:kind "txexpr" #:link-target? #f (paragraph content ...)
          #:contracts ([content xexpr?])]
 
-@defform[#:kind "txexpr" #:literals (style start)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (style start)
          (itemization [[style style-str] [start maybe-start]] item ...)
          #:contracts ([style-str (or/c "loose" "tight")]
                       [maybe-start (or/c "" string?)]
                       [item xexpr?])]
 
-@defform[#:kind "txexpr" (item block ...)
+@defform[#:kind "txexpr" #:link-target? #f (item block ...)
          #:contracts ([block xexpr?])]
 
-@defform[#:kind "txexpr" (blockquote block ...)
+@defform[#:kind "txexpr" #:link-target? #f (blockquote block ...)
          #:contracts ([block block-element?])]
 
-@defform[#:kind "txexpr" #:literals (info) (code-block [[info info-str]] content ...)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (info)
+         (code-block [[info info-str]] content ...)
          #:contracts ([info-str string?]
                       [content xexpr?])]
 
-@defform[#:kind "txexpr" (html-block content ...)
+@defform[#:kind "txexpr" #:link-target? #f (html-block content ...)
          #:contracts ([content xexpr?])]
 
-@defform[#:kind "txexpr" #:literals (label ref-count)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (label ref-count)
          (footnote-definition [[label lbl] [ref-count rcount]] content ...)
          #:contracts ([lbl string?]
                       [rcount string?]
                       [content block-element?])]
 
-@defform[#:kind "txexpr" (thematic-break)]
+@defform[#:kind "txexpr" #:link-target? #f (thematic-break)]
 
 )]
 
@@ -344,36 +346,37 @@ Below is a list of the inline elements that can be produced by the Markdown pars
 
 @deftogether[(
 
-@defform[#:kind "txexpr" (italic content ...)
+@defform[#:kind "txexpr" #:link-target? #f (italic content ...)
          #:contracts ([content inline-element?])]
 
-@defform[#:kind "txexpr" (bold content ...)
+@defform[#:kind "txexpr" #:link-target? #f (bold content ...)
          #:contracts ([content inline-element?])]
 
-@defform[#:kind "txexpr" #:literals (dest title) (link [[dest href] [title title-str]] content ...)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (dest title)
+         (link [[dest href] [title title-str]] content ...)
          #:contracts ([href string?]
                       [title-str string?]
                       [content inline-element?])]
 
-@defform[#:kind "txexpr" (code content ...)
+@defform[#:kind "txexpr" #:link-target? #f (code content ...)
          #:contracts ([content inline-element?])]
 
-@defform[#:kind "txexpr" #:literals (src title desc)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (src title desc)
         (image [[src source] [title title-str] [desc description]])
         #:contracts ([source string?]
                      [title-str string?]
                      [description string?])]
 
-@defform[#:kind "txexpr" (html content ...)
+@defform[#:kind "txexpr" #:link-target? #f (html content ...)
          #:contracts ([content inline-element?])]
 
-@defform[#:kind "txexpr" #:literals (label defn-num ref-num)
+@defform[#:kind "txexpr" #:link-target? #f #:literals (label defn-num ref-num)
         (footnote-reference [[label lbl] [defn-num dnum] [ref-num rnum]])
         #:contracts ([lbl string?]
                      [dnum string?]
                      [rnum string?])]
 
-@defform[#:kind "txexpr" (line-break)]
+@defform[#:kind "txexpr" #:link-target? #f (line-break)]
 
 )]
 
@@ -384,10 +387,10 @@ You can use Racket code to introduce new elements to the document’s structure.
 A @deftech{custom element} is any list that begins with a symbol, and which was produced by inline
 Racket code rather than by parsed Markdown syntax.
 
-@margin-note{If you think “custom elements” sound like Pollen “tags”, you are correct. I use
-“custom elements” rather than “tags” or “X-expressions” to distinguish them from from
-Markdown-generated elements; also, unlike Pollen tags, custom elements may be treated differently
-depending on their @tech{block attributes}.}
+@margin-note{If you think “custom elements” sound like Pollen “tags”, you are correct. I use “custom
+elements” rather than “tags” or “X-expressions” to distinguish them from from Markdown-generated
+elements; also, unlike Pollen tags, custom elements may be treated differently depending on their
+@tech{block attributes}.}
 
 A custom element may optionally have a set of @deftech{attributes}, which is a list of key/value
 pairs that appears as the second item in the list. 
@@ -398,10 +401,10 @@ attribute:
 @codeblock|{
 #lang punct
 
-•(define (a term . elems)
-   `(abbrevation [[term ,term]] ,@elems))
+•(define (abbr term . elems)
+   `(abbreviation [[term ,term]] ,@elems))
 
-Writing documentation in Javascript? •a["Laugh out loud"]{LOL}.
+Writing documentation in Javascript? •abbr["Laugh out loud"]{LOL}.
 }|
 
 Produces:
@@ -410,7 +413,7 @@ Produces:
 '#s(document #hasheq((here-path . "7-unsaved-editor"))
              ((paragraph
                "Writing documentation in Javascript? "
-               (abbrevation ((term "Laugh out loud")) "LOL")
+               (abbreviation ((term "Laugh out loud")) "LOL")
                "."))
              ())
 ]
@@ -418,8 +421,8 @@ Produces:
 By default, Punct will treat custom elements as @tech{inline elements}: they will be wrapped inside
 @tt{paragraph} elements if they occur on their own lines.
 
-You can set a custom element’s @deftech{block attribute} to force Punct to treat it as a block element
-(that is, to avoid having it auto-wrapped inside a @tt{paragraph} element): simply give it a
+You can set a custom element’s @deftech{block attribute} to force Punct to treat it as a block
+element (that is, to avoid having it auto-wrapped inside a @tt{paragraph} element): simply give it a
 @racket['block] attribute with a value of either @racket["root"] or @racket["single"]:
 
 @itemlist[
@@ -445,26 +448,24 @@ just get unexpected results in the structure of your document.
 the CommonMark parser into treating custom elements as blocks. With @racket["root"]-type blocks,
 Punct inserts extra line breaks (which is what causes these blocks to “escape” out of Markdown
 blockquotes to the document’s root level, just as it would if you typed two linebreaks in your
-source). With @racket["single"]-type blocks, Punct allows CommonMark to wrap the element in
-a @tt{paragraph}, then looks for any paragraph that contains @emph{only} a @racket["single"]-type
-block and “shucks” them out of their containing paragraphs. The need for such tricks comes from
-a design decision to use the @racketmodname[commonmark] package exactly as published, without
-forking or customizing it in any way.
+source). With @racket["single"]-type blocks, Punct allows CommonMark to wrap the element in a
+@tt{paragraph}, then looks for any paragraph that contains @emph{only} a @racket["single"]-type
+block and “shucks” them out of their containing paragraphs. The need for such tricks comes from a
+design decision to use the @racketmodname[commonmark] package exactly as published, without forking
+or customizing it in any way.
 
-@subsection[#:tag "custom-element-conveniences"]{Custom element conveniences}
+@subsubsection[#:tag "custom-element-conveniences"]{Custom element conveniences}
 
-You will probably find yourself writing several functions of the form:
+If you make much use of @tech{custom elements}, you will probably find yourself writing several
+functions that do nothing but lightly rearrange the arguments into an X-expression:
 
 @racketblock[
 (define (abbr term . elems)
    `(abbrevation [[term ,term]] ,@elems))
 ]
 
-Here, no processing is being done other than lightly arranging the arguments into an X-expression. The
-@racketmodname[punct/element] module provides some conveniences for defining functions of this kind.
-
-You can use @racket[default-element-function] to create a function that automatically parses keyword
-arguments into attributes:
+To cut down on the repetition, you can use @racket[default-element-function] to create a function
+that automatically parses keyword arguments into attributes:
 
 @codeblock{
 #lang punct
@@ -541,8 +542,8 @@ Renders @racket[_pdoc] into a string containing HTML markup. Each @tech{custom e
 @racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
 
 This function uses @racket[xexpr->string] to generate the HTML string. This function will blindly
-escape characters inside @racketoutput{<script>} and @racketoutput{<style>} tags, which may introduce
-errors. For HTML output that is friendlier and more correct, consider using the
+escape characters inside @racketoutput{<script>} and @racketoutput{<style>} tags, which may
+introduce errors. For HTML output that is friendlier and more correct, consider using the
 @racketmodname[html-printer #:indirect] package in concert with @racket[doc->html-xexpr].
 
 For more information on using the @racket[_fallback] argument to render custom elements, see
