@@ -3,6 +3,7 @@
 @(require [for-label commonmark
                      punct/core
                      punct/doc
+                     punct/element
                      punct/fetch
                      punct/parse
                      punct/render/base
@@ -17,7 +18,7 @@
 @(require scribble/examples "tools.rkt")
 @(define ev (sandbox))
 
-@(ev '(require punct/doc punct/parse))
+@(ev '(require punct/doc punct/parse punct/element))
 
 @title[#:style '(toc)]{Punct: CommonMark + Racket}
 @author[(author+email "Joel Dueck" "joel@jdueck.net")]
@@ -37,15 +38,15 @@ The latest version of this documentation can be found at
 @link["https://joeldueck.com/what-about/punct/"]{@tt{joeldueck.com}}. The source and installation
 instructions are at the project’s @link["https://github.com/otherjoel/punct"]{GitHub repo}.
 
+@margin-note{If you decide to rely on Punct in any kind of “production” capacity, you should make
+sure to monitor the @link["https://github.com/otherjoel/punct/pulls"]{pull requests} and
+@link["https://github.com/otherjoel/punct/discussions/categories/announcements"]{Announcements}
+areas of the GitHub repository. Any significant changes will be announced there first.}
+
 @youtube-embed-element["https://www.youtube.com/embed/9zxna1tlvHU"]
 
 I have designed Punct for my own use and creative needs. If you would like Punct to work differently
 or support some new feature, I encourage you to fork it and customize it yourself.
-
-@margin-note{If you decide to rely on Punct in any kind of “production” capacity, you should make
-sure to monitor the
-@link["https://github.com/otherjoel/punct/discussions/categories/announcements"]{Announcements} area
-of the GitHub repository. Any significant changes will be announced there first.}
 
 This documentation assumes you are familiar with Racket, and with @racketlink[xexpr?]{X-expressions}
 and associated terms (attributes, elements, etc).
@@ -236,7 +237,7 @@ a string.}
 
 ]
 
-@section{Document Structure}
+@section{Document structure}
 
 Because it uses the @racketmodname[commonmark] parser as a starting point, Punct documents come with
 a default structure that is fairly opinionated. You can augment this structure if you understand how
@@ -380,8 +381,13 @@ Below is a list of the inline elements that can be produced by the Markdown pars
 
 You can use Racket code to introduce new elements to the document’s structure.
 
-A @deftech{custom element} is any list that begins with a symbol other than those produced by the
-Markdown parser. 
+A @deftech{custom element} is any list that begins with a symbol, and which was produced by inline
+Racket code rather than by parsed Markdown syntax.
+
+@margin-note{If you think “custom elements” sound like Pollen “tags”, you are correct. I use
+“custom elements” rather than “tags” or “X-expressions” to distinguish them from from
+Markdown-generated elements; also, unlike Pollen tags, custom elements may be treated differently
+depending on their @tech{block attributes}.}
 
 A custom element may optionally have a set of @deftech{attributes}, which is a list of key/value
 pairs that appears as the second item in the list. 
@@ -409,11 +415,12 @@ Produces:
              ())
 ]
 
-By default, Punct will treat custom elements as inline content.
+By default, Punct will treat custom elements as @tech{inline elements}: they will be wrapped inside
+@tt{paragraph} elements if they occur on their own lines.
 
-If you want a custom element to count as a block (that is, to avoid having it auto-wrapped inside
-a @tt{paragraph} element), you must give it a @racket['block] attribute with a value of either
-@racket["root"] or @racket["single"]:
+You can set a custom element’s @deftech{block attribute} to force Punct to treat it as a block element
+(that is, to avoid having it auto-wrapped inside a @tt{paragraph} element): simply give it a
+@racket['block] attribute with a value of either @racket["root"] or @racket["single"]:
 
 @itemlist[
 
@@ -444,13 +451,65 @@ block and “shucks” them out of their containing paragraphs. The need for suc
 a design decision to use the @racketmodname[commonmark] package exactly as published, without
 forking or customizing it in any way.
 
+@subsection[#:tag "custom-element-conveniences"]{Custom element conveniences}
+
+You will probably find yourself writing several functions of the form:
+
+@racketblock[
+(define (abbr term . elems)
+   `(abbrevation [[term ,term]] ,@elems))
+]
+
+Here, no processing is being done other than lightly arranging the arguments into an X-expression. The
+@racketmodname[punct/element] module provides some conveniences for defining functions of this kind.
+
+You can use @racket[default-element-function] to create a function that automatically parses keyword
+arguments into attributes:
+
+@codeblock{
+#lang punct
+•(define abbr (default-element-function 'abbreviation))
+
+•abbr[#:term "Laugh Out Loud"]{LOL}  •; -→ '(abbreviation ((term "Laugh Out Loud")) "LOL")
+}
+
+You can simplify this even further with @racket[define-element]:
+
+@codeblock{
+#lang punct
+•(define-element abbr)
+
+•abbr[#:term "Laugh Out Loud"]{LOL}  •; -→ '(abbr ((term "Laugh Out Loud")) "LOL")
+}
+
+Both @racket[default-element-function] and @racket[define-element] allow shorthand for setting
+default @tech{block attributes} and defaults for the @racket['class] attribute. See their entries in
+module reference for more details.
+
+@codeblock{
+#lang punct
+•(define-element note box§.warning #:title "WATCH IT")
+
+•note{Wet floor!}
+•; -→ '(box ((block "root") (class "warning") (title "WATCH IT") "Wet floor!")
+}
+
+@section{Rendering output}
+
+A Punct document is format-independent; when you want to use it in an output file, it must be
+rendered into that output file’s format.
+
+Punct currently includes an HTML renderer and a plain-text renderer. Both are based on a “base”
+renderer. You can extend any Punct renderer or the base renderer to customize the process of
+converting @racket[document]s to your target output format(s).
+
 @subsection[#:tag "rendering-custom-elements"]{Rendering custom elements}
 
 When rendering your document to a specific output format (such as HTML) you’ll want to provide
 a fallback procedure to the renderer that can convert those elements into that specific format.
 
 Your fallback function will be given three arguments: the tag, a list of attributes, and a list of
-sub-elements found inside your element. The elements will already have been fully processed by
+sub-elements found inside your element. The sub-elements will already have been fully processed by
 Punct.
 
 Here’s an example pair of functions for rendering documents containing the custom @tt{abbreviation}
@@ -459,22 +518,13 @@ element (from the examples above) into HTML:
 @racketblock[
 
 (define (custom-html tag attrs elems)
-  (match `(,tag ,attrs)
+  (match (list tag attrs)
     [`(abbreviation [[term ,term]]) `(abbr [[title ,term]] ,@elems)]))
 
 (define (my-html-renderer source-path)
   (doc->html (get-doc source-path) custom-html))
 
 ]
-
-@section{Rendering Output}
-
-A Punct document is format-independent; when you want to use it in an output file, it must be
-rendered into that output file’s format.
-
-Punct currently includes an HTML renderer and a plain-text renderer. Both are based on a “base”
-renderer. You can extend any Punct renderer or the base renderer to customize the process of
-converting @racket[document]s to your target output format(s).
 
 @subsection{Rendering HTML}
 
@@ -578,7 +628,6 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 }
 
-
 @defproc[(make-plaintext-fallback [width exact-nonnegative-integer?])
          (symbol? (listof (listof symbol? string?)) list? . -> . string?)]{
 
@@ -631,6 +680,86 @@ is given as a bare identifier (i.e., without using @racket[quote]).
 •?[title "Example Title" author "Me"]
 
 ...}
+
+}
+
+@subsubsection{Elements}
+
+@defmodule[punct/element]
+
+The bindings provided by this module are also provided by @racketmodname[punct/core].
+
+@defproc[(default-element-function [tag symbol?]
+                                   [default-attr-kw keyword?]
+                                   [default-attr-val string?] ...)
+         (->* () #:rest any/c xexpr?)]{
+
+Returns a function which produces a @racket[_tag] @tech{custom element}. This function takes any
+number of keyword arguments (which are converted to attributes) and non-keyword arguments (which
+become the child elements of this returned element).
+
+You can also give keyword/value arguments to @racket[default-element-function] itself; these will be
+set as default attributes/values in the custom element returned by the resulting function.
+
+@examples[#:eval ev
+          (define aside (default-element-function 'aside))
+          (aside "Hello")
+          (define kbd (default-element-function 'kbd #:alt "foo"))
+          (kbd "CTRL")
+          (kbd "CTRL" #:data-code "1")
+          ]
+
+@margin-note{On Mac OS, type @tt{ALT+6} to produce @litchar{§} and @tt{ALT+7} to produce @litchar{¶}.}
+
+If @racket[tag] ends in either @litchar{§} or @litchar{¶}, the resulting function will add a default
+@tech{block attribute} of @racket{root} or @racket{single} respectively:
+
+@examples[#:eval ev
+          (define info (default-element-function 'info§))
+          (info "Note!")
+          (define mypar (default-element-function 'mypar¶))
+          (mypar "Walnuts")]
+
+If @racket[tag] has a suffix of the form @racketidfont{.foo}, the resulting function will add a default
+@racket['class] attribute whose value is set to @racket{foo}. Multiple such suffixes will add
+additional values to the @racket['class] attribute.
+
+@examples[#:eval ev
+          (define carton (default-element-function 'carton.xyz.abc))
+          (carton "Cashews")
+          (define crate (default-element-function 'crate¶.foo))
+          (crate "Pecans")]
+
+@history[#:added "1.3"]
+
+}
+
+@defform*[[(define-element id [default-attr-kw default-attr-val ...])
+           (define-element id tag [default-attr-kw default-attr-val ...])]
+          #:contracts ([default-attr-kw keyword?]
+                       [default-attr-val string?])]{
+
+Shorthand macro for @racket[default-element-function].
+
+If @racket[tag] is supplied, it is used as the tag for the X-expressions generated by the resulting
+function:
+
+@examples[#:eval ev #:label #f
+          (define-element bowl container.bowl)
+          (bowl "Corn nuts")
+          (define-element jar vessel¶ #:type "Glass")
+          (jar "Chestnuts")]
+
+If @racket[tag] is not supplied, the first argument is used both as the identifier for the function
+and for the tag in generated X-expressions:
+
+@examples[#:eval ev #:label #f
+          (define-element bag.xyz.abc)
+          (bag "Sunflower seeds")
+          (define-element packet¶.foo)
+          (packet "Raisins")]
+
+@history[#:added "1.3"]
 
 }
 

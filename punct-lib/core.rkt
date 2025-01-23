@@ -7,11 +7,13 @@
 
 (require (for-syntax racket/base racket/sequence)
          "doc.rkt"
+         "element.rkt"
          "private/quasi-txpr.rkt")
 
 (provide ref-attr
          (all-defined-out)
-         (all-from-out "doc.rkt"))
+         (all-from-out "doc.rkt")
+         (all-from-out "element.rkt"))
 
 (define current-metas (make-parameter #f))
 
