@@ -506,8 +506,11 @@ converting @racket[document]s to your target output format(s).
 
 @subsection[#:tag "rendering-custom-elements"]{Rendering custom elements}
 
-When rendering your document to a specific output format (such as HTML) you’ll want to provide
-a fallback procedure to the renderer that can convert those elements into that specific format.
+When rendering your document to a specific output format (such as HTML) Punct has to decide how to
+render any @tech{custom elements} introduced by your code. By default it will use its own fallback
+function for the target output format. For example, when targeting HTML, Punct defaults to
+@racket[default-html-tag], which simply converts custom elements to strings of HTML. If you want
+more customized behavior, you’ll need to provide a fallback procedure to the renderer.
 
 Your fallback function will be given three arguments: the tag, a list of attributes, and a list of
 sub-elements found inside your element. The sub-elements will already have been fully processed by
