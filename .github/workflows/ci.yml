@@ -18,8 +18,6 @@ jobs:
           variant: 'CS'
           version: ${{ matrix.racket-version }}
       - name: Installing punct-tests and its dependencies
-        run: raco pkg install --no-docs --auto --name punct-tests
-      - name: Compiling punct-tests and building its docs
-        run: raco setup --check-pkg-deps --unused-pkg-deps punct-tests
+        run: raco pkg install --no-docs --auto punct-lib/ punct-tests/
       - name: Testing punct-tests
         run: raco test -x -p punct-tests
