@@ -19,13 +19,11 @@
   (check-equal?
    (get-doc/unhere test-metas)
    '#s(document
-       #hasheq((a . "sd a a")
-               (boxed . #:17)
-               (case-insenstive-symbol-with-space . |hob nob|)
+       #hasheq((boxed . #:17)
+               (case-insensitive-symbol-with-space . |hob nob|)
                (commented-number . 14)
                (draft? . #t)
-               (f . "b a")
-               (fav-number . 2+)
+               (fav-number . 2+3i)
                (fruit-ratings . #hash((apple . 4) (grape . 3) (pear . 5)))
                (here-path . ".")
                (name-regex . #rx"(Bob|Alice)")
