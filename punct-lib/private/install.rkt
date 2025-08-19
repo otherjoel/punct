@@ -14,7 +14,7 @@
 
 (define installed-key         'punct-install-date)
 (define (already-installed?)  (get-preference installed-key))
-(define (save-install-date!) (put-preferences (list installed-key)
+(define (save-install-date!)  (put-preferences (list installed-key)
                                                (list (date->string (current-date)))))
 (define (unset-installation!) (put-preferences (list installed-key) '(#f)))
 
