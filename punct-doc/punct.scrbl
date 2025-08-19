@@ -51,6 +51,11 @@ or support some new feature, I encourage you to fork it and customize it yoursel
 This documentation assumes you are familiar with Racket, and with @racketlink[xexpr?]{X-expressions}
 and associated terms (attributes, elements, etc).
 
+@callout{If you use Splitflap in your project, @hyperlink["mailto:joel@jdueck.net"]{email Joel} to
+introduce yourself! This is the sole condition of the project’s
+@hyperlink["https://github.com/otherjoel/punct/blob/main/LICENSE.md"]{permissive license.} (See
+@hyperlink["https://joeldueck.com/how-i-license.html"]{How I License} for background.)}
+
 @local-table-of-contents[]
 
 @section{Quick start}

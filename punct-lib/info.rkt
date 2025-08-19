@@ -3,7 +3,8 @@
 (define collection "punct")
 (define version "1.3")
 (define pkg-desc "implementation part of \"punct\"")
-(define license 'BlueOak-1.0.0)
+(define license 'LicenseRef-CreatorCxn-1.0)
+(define install-collection "private/install.rkt")
 
 (define deps '("at-exp-lib"
                "commonmark-lib"

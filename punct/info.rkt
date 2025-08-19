@@ -10,4 +10,4 @@
 (define pkg-desc
   "Markdown + Racket document authoring environment")
 (define license
-  'BlueOak-1.0.0)
+  'LicenseRef-CreatorCxn-1.0)

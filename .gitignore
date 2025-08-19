@@ -8,3 +8,5 @@ compiled/
 *.js
 *.css
 doc/
+!punct-doc/styles/*.css
+

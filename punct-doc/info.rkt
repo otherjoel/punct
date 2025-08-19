@@ -14,4 +14,4 @@
 (define update-implies '("punct-lib"))
 
 (define pkg-desc "documentation part of \"punct\"")
-(define license 'BlueOak-1.0.0)
+(define license 'LicenseRef-CreatorCxn-1.0)
