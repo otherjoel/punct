@@ -12,7 +12,7 @@ this repository. Any significant or breaking changes will be announced there fir
 [a]: https://github.com/otherjoel/punct/discussions/categories/announcements
 
 > [!NOTE] 
-> The only condition of Splitflap's [permissive license](LICENSE.md) is that you introduce yourself
+> The only condition of Punct's [permissive license](LICENSE.md) is that you introduce yourself
 to me by emailing me at <joel@jdueck.net>. See [How I License][hil] for more background.
 
 [hil]: https://joeldueck.com/how-i-license.html
