@@ -248,7 +248,8 @@ Because it uses the @racketmodname[commonmark] parser as a starting point, Punct
 a default structure that is fairly opinionated. You can augment this structure if you understand how
 the pieces fit together.
 
-@defmodule[punct/doc]
+@declare-exporting[punct/doc punct/core]
+@defmodule[punct/doc #:no-declare]
 
 The bindings provided by this module are also provided by @racketmodname[punct/core].
 
@@ -694,7 +695,8 @@ is given as a bare identifier (i.e., without using @racket[quote]).
 
 @subsubsection{Elements}
 
-@defmodule[punct/element]
+@declare-exporting[punct/element punct/core]
+@defmodule[punct/element #:no-declare]
 
 The bindings provided by this module are also provided by @racketmodname[punct/core].
 
