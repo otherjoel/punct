@@ -77,6 +77,6 @@
   (syntax-parse stx
     [(_ TAG:id (~optional (~seq (~seq attr:keyword val:string) ...)))
      (with-syntax ([id (datum->syntax #'TAG (get-id (syntax->datum #'TAG)))])
-       #'(define id (default-element-function 'ID (~? (~@ (~@ attr val) ...)))))]
+       #'(define id (default-element-function 'TAG (~? (~@ (~@ attr val) ...)))))]
     [(_ ID:id TAG:id (~optional (~seq (~seq attr:keyword val:string) ...)))
      #'(define ID (default-element-function 'TAG (~? (~@ (~@ attr val) ...))))]))
