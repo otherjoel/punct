@@ -21,7 +21,7 @@
 @(ev '(require punct/doc punct/parse punct/element))
 
 @title[#:style '(toc)]{Punct: CommonMark + Racket}
-@author[(author+email "Joel Dueck" "joel@jdueck.net")]
+@author{@elem{Joel Dueck (@hyperlink["https://joeldueck.com"]{@tt{joeldueck.com}})}}
 
 @defmodulelang[punct]
 
@@ -85,17 +85,17 @@ and metadata, and produce a @racket[document] struct containing the metadata and
 Tree (AST):
 
 @racketblock[
- '#s(document #hasheq((author . "Me") (here-path . "7-unsaved-editor"))
-              ((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
-              ())]
+ (document '#hasheq((author . "Me") (here-path . "7-unsaved-editor"))
+           '((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
+           '())]
 
 This value is automatically bound to @racketid[doc]. The metadata at the top is included in that
 value, but is also bound to @racketid[metas].
 
 @(ev '(define doc
-        '#s(document #hasheq((author . "Me") (here-path . "7-unsaved-editor"))
-((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
-())))
+        (document '#hasheq((author . "Me") (here-path . "7-unsaved-editor"))
+'((heading ((level "1")) "My first Punct doc") (paragraph "Simple."))
+'())))
 
 @(ev '(define metas '#hasheq((author . "Me") (here-path . "7-unsaved-editor"))))
 
@@ -145,13 +145,13 @@ produce a bulleted list:
 Results in:
 
 @racketblock[
- '#s(document #hasheq((here-path . "7-unsaved-editor"))
-              ((paragraph "Three things to remember:")
-                 (itemization ((style "tight") (start "#f"))
-                              (item "KEEP")
-                              (item "IT")
-                              (item "DOWN")))
-              ())]
+ (document '#hasheq((here-path . "7-unsaved-editor"))
+           '((paragraph "Three things to remember:")
+             (itemization ((style "tight") (start "#f"))
+                          (item "KEEP")
+                          (item "IT")
+                          (item "DOWN")))
+           '())]
 
 @section{Writing Punct}
 
@@ -253,7 +253,9 @@ the pieces fit together.
 
 The bindings provided by this module are also provided by @racketmodname[punct/core].
 
-@defstruct[document ([metas hash-eq?] [body (listof block-element?)] [footnotes (listof block-element?)]) #:prefab]{
+@defstruct[document ([metas hash-eq?] 
+                     [body (listof block-element?)]
+                     [footnotes (listof block-element?)]) #:transparent]{
 
 A Punct source file evaluates to a @racket[document] struct that includes a @racket[_metas] hash
 table containing any metadata defined using the @secref{metas block}, @racket[?] or
