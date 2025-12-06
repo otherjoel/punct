@@ -7,14 +7,13 @@
 (provide (struct-out document) block-element? inline-element?)
 
 #| Punct’s document structure is very similar to Commonmark’s,
-   except that it is prefab and uses simple lists instead of
-   structs. This makes it easier to add custom elements, and to
-   serialize the document.
+   except that uses simple lists instead of structs. This makes 
+   it easier to add custom elements.
 
    Punct’s doc also includes a hash table for metadata.
 |#
 
-(struct document (metas body footnotes) #:prefab)
+(struct document (metas body footnotes) #:transparent)
 
 ;; These functions are not actually used in punct-lib. They exist only to have some clear
 ;; predicates for use in the documentation.
