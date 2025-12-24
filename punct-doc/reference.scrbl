@@ -348,12 +348,26 @@ For more information on using the @racket[_fallback] argument to render custom e
 
 @defproc[(default-typst-tag [tag symbol?] [attributes (listof (listof symbol? string?))] [elements list?]) string?]{
 
-Returns a Typst function call string comprised of @racket[_tag] and @racket[_elements].
+Returns a Typst function call string using @racket[_tag], @racket[_attributes], and @racket[_elements].
 Mainly used as the default @tech{fallback function} for @racket[doc->typst].
 
-Note that @racket[_elements] are already escaped when passed to the fallback. If your custom fallback
-uses @racket[_attributes], you must escape attribute values manually using @racket[escape-typst-text]
-or @racket[escape-typst-string].
+The output format is @tt{#tag(attr: "val", ...)[content]}, where attributes become named arguments
+with string values, and elements become a trailing content block. When there are no attributes,
+the parentheses are omitted: @tt{#tag[content]}. When there are no elements, the content block
+is omitted: @tt{#tag(attr: "val")}.
+
+Hyphens in @racket[_tag] and attribute names are converted to underscores to produce valid Typst
+identifiers (e.g., @racket['my-element] becomes @tt{my_element}).
+
+Note that @racket[_elements] are already escaped when passed to the fallback. Attribute values
+are automatically escaped and quoted as Typst strings.
+
+@examples[#:eval ev
+(require punct/render/typst)
+(default-typst-tag 'note '() '("Important!"))
+(default-typst-tag 'note '((class "info")) '("Important!"))
+(default-typst-tag 'my-spacer '((line-height "2em")) '())
+]
 
 @history[#:added "1.4"]
 

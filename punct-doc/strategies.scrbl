@@ -206,6 +206,73 @@ Just as with HTML, you can provide a @tech{fallback function} for custom element
 Note that in Typst fallbacks, the @racket[elems] have already been escaped and rendered to strings,
 so you typically join them with @racket[string-join] or @racket[string-append].
 
+@subsection{Using the default Typst fallback}
+
+The default @tech{fallback function} (@racket[default-typst-tag]) converts custom elements directly
+to Typst function calls. For example, a custom element like @racket['(note "Important!")] becomes
+@tt{#note[Important!]} in the output. Attributes become named arguments: @racket['(note [[class "info"]] "Text")]
+becomes @tt{#note(class: "info")[Text]}.
+
+This means you can define corresponding functions in your Typst template, and your custom elements
+will automatically call them:
+
+@codeblock|{
+#lang racket
+
+(require punct/fetch
+         punct/render/typst
+         racket/system)
+
+(define (render-to-pdf source-path output-pdf)
+  (define doc (get-doc source-path))
+  (define typst-path (path-replace-extension output-pdf ".typ"))
+
+  ;; Typst preamble with custom function definitions
+  (define typst-preamble #<<PREAMBLE
+#set page(paper: "us-letter", margin: 1in)
+#set text(font: "Linux Libertine", size: 11pt)
+
+// Define a function that matches your custom Punct element.
+// Named arguments come from element attributes; content from elements.
+#let note(type: "info", body) = {
+  let fills = (info: luma(230), warning: rgb("#fff3cd"))
+  block(
+    fill: fills.at(type),
+    inset: 1em,
+    radius: 4pt,
+    body
+  )
+}
+
+PREAMBLE
+)
+
+  (define typst-content
+    (string-append typst-preamble "\n" (doc->typst doc)))
+
+  (call-with-output-file typst-path
+    (lambda (out) (display typst-content out))
+    #:exists 'replace)
+
+  (system* (find-executable-path "typst")
+           "compile" typst-path output-pdf))
+}|
+
+With this setup, a Punct source like:
+
+@codeblock|{
+#lang punct
+
+•(define-element note)
+
+•note{Remember to save}
+
+•note[#:type "warning"]{This action cannot be undone.}
+}|
+
+...will render as @tt{#note[Remember to save]} and @tt{#note(type: "warning")[This action cannot be undone.]},
+calling the @tt{note} function defined in the Typst preamble with the appropriate arguments.
+
 @section[#:tag "extending-renderer"]{Extending the Renderer}
 
 Sometimes providing a @tech{fallback function} isn't enough. You might need to:

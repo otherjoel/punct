@@ -163,6 +163,26 @@
   (send (new punct-typst-render% [doc doc] [render-fallback fallback])
         render-document))
 
+;; Convert symbol to valid Typst identifier (hyphens → underscores)
+(define (symbol->typst-id sym)
+  (string-replace (symbol->string sym) "-" "_"))
+
 ;; Default handler for custom/unknown tags
+;; Generates Typst function call: #tag(attr: "val", ...)[content]
 (define (default-typst-tag tag attrs elems)
-  (~a "#" tag "(" (if (null? elems) "" (join-elems elems)) ")"))
+  (define tag-id (symbol->typst-id tag))
+  (define attr-str
+    (if (null? attrs)
+        ""
+        (string-join
+         (for/list ([attr (in-list attrs)])
+           (match attr
+             [(list name value)
+              (~a (symbol->typst-id name) ": \"" (escape-typst-string value) "\"")]))
+         ", ")))
+  (define content (join-elems elems))
+  (cond
+    [(and (null? attrs) (null? elems)) (~a "#" tag-id "()")]
+    [(null? attrs) (~a "#" tag-id "[" content "]")]
+    [(null? elems) (~a "#" tag-id "(" attr-str ")")]
+    [else (~a "#" tag-id "(" attr-str ")[" content "]")]))
