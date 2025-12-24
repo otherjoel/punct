@@ -9,6 +9,8 @@
 
 (provide (all-defined-out))
 
+(define Typst (hyperlink "https://typst.app" "Typst"))
+
 (define-runtime-path aux-css "styles/my.css")
 (define-runtime-path aux-tex "styles/my.tex")
 
