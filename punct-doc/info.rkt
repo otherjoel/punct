@@ -1,7 +1,7 @@
 #lang info
 
 (define collection "punct")
-(define scribblings '(("punct.scrbl")))
+(define scribblings '(("punct.scrbl" (multi-page))))
 
 (define deps '("scribble-lib"
                "base"))
