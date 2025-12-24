@@ -9,6 +9,7 @@
                      punct/render/base
                      punct/render/html
                      punct/render/plaintext
+                     punct/render/typst
                      racket/base
                      racket/class
                      racket/contract/base
@@ -508,7 +509,7 @@ module reference for more details.
 A Punct document is format-independent; when you want to use it in an output file, it must be
 rendered into that output file’s format.
 
-Punct currently includes an HTML renderer and a plain-text renderer. Both are based on a “base”
+Punct currently includes renderers for HTML, Typst, and plain-text. These are based on a “base”
 renderer. You can extend any Punct renderer or the base renderer to customize the process of
 converting @racket[document]s to your target output format(s).
 
@@ -590,6 +591,71 @@ Mainly used as the default fallback procedure for @racket[doc->html].
 (default-html-tag 'kbd '() '("Enter"))
 (default-html-tag 'a '((href "http://example.com")) '("Link"))
 ]
+}
+
+@subsection{Rendering Typst}
+
+@defmodule[punct/render/typst]
+
+@link["https://typst.app"]{Typst} is a modern typesetting system designed as an alternative to LaTeX.
+This renderer produces Typst markup from Punct documents.
+
+@defproc[(doc->typst [pdoc document?]
+                     [fallback (symbol? (listof (listof symbol? string?)) list? . -> . string?)
+                               default-typst-tag]) string?]{
+
+Renders @racket[_pdoc] into a string containing Typst markup. Any @tech{custom elements} are passed
+to @racket[_fallback], which must return a string.
+
+Markdown/Punct elements are mapped to Typst syntax as follows:
+
+@itemlist[
+@item{Headings use @litchar{=} characters (e.g., @tt{== Heading} for level 2)}
+@item{Bold text is wrapped in @litchar{*asterisks*}}
+@item{Italic text is wrapped in @litchar{_underscores_}}
+@item{Code blocks use triple backticks with optional language}
+@item{Links become @tt{#link("url")[text]}}
+@item{Images become @tt{#image("path")}}
+@item{Bullet lists use @litchar{- } prefix}
+@item{Numbered lists use @litchar{+ } prefix}
+@item{Block quotes become @tt{#quote(block: true)[...]}}
+@item{Footnotes are rendered inline using Typst's @tt{#footnote[...]} syntax}
+]
+
+Typst special characters (@litchar{*}, @litchar{_}, @litchar{`}, @litchar{#},
+@litchar["@"], @litchar{$}, @litchar{[}, @litchar{]}) in text content are automatically escaped,
+allowing the same Punct source to target both HTML and Typst without manual escaping. Content inside
+code blocks and inline code is not escaped, as Typst renders these literally.
+
+For more information on using the @racket[_fallback] argument to render custom elements, see
+@secref["rendering-custom-elements"].
+
+}
+
+@defproc[(default-typst-tag [tag symbol?] [attributes (listof (listof symbol? string?))] [elements list?]) string?]{
+
+Returns a Typst function call string comprised of @racket[_tag] and @racket[_elements].
+Mainly used as the default fallback procedure for @racket[doc->typst].
+
+Note that @racket[_elements] are already escaped when passed to the fallback. If your custom fallback
+uses @racket[_attributes], you must escape attribute values manually using @racket[escape-typst-text]
+or @racket[escape-typst-string].
+
+}
+
+@defproc[(escape-typst-text [str string?]) string?]{
+
+Escapes special Typst characters (@litchar{*}, @litchar{_}, @litchar{`}, @litchar{#},
+@litchar["@"], @litchar{$}, @litchar{[}, @litchar{]}, @litchar{\}) in @racket[_str] by
+prefixing them with backslashes. Use this for text content in custom fallback procedures.
+
+}
+
+@defproc[(escape-typst-string [str string?]) string?]{
+
+Escapes backslashes and double quotes in @racket[_str] for use within quoted Typst strings
+(e.g., URLs or file paths in function arguments like @tt{#link("...")} or @tt{#image("...")}).
+
 }
 
 @subsection{Rendering plain text}

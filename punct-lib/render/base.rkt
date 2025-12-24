@@ -43,9 +43,13 @@
           [`(footnote-definition [[label ,label] [ref-count ,ref-count]] . ,elems)
            (render-footnote-definition label ref-count (render-elements elems))])))
 
+    ;; Override this method in subclasses to transform raw text strings
+    ;; before they are passed to element renderers (e.g., for escaping)
+    (define/public (render-string s) s)
+
     (define (render-element elem)
       (match elem
-        [(? string?) elem]
+        [(? string?) (render-string elem)]
           
         ;; CommonMark block-level content
         [(tx* 'heading (level) elems) (render-heading level (render-elements elems))]
@@ -61,7 +65,7 @@
         [(tx* 'link (dest title?) elems) (render-link dest title (render-elements elems))]
         [(tx* 'italic elems) (render-italic (render-elements elems))]
         [(tx* 'bold elems) (render-bold (render-elements elems))]
-        [(tx* 'code elems) (render-code (render-elements elems))]
+        [(tx* 'code elems) (render-code elems)]  ;; raw elements, like code-block
         [(tx* 'image (src title? desc?) elems) (render-image src title desc elems)]
         [(tx* 'footnote-reference (label defn-num ref-num) _)
          (render-footnote-reference label defn-num ref-num)]
