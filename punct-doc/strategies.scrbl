@@ -124,9 +124,9 @@ convert them. Provide a @tech{fallback function} as the second argument to @rack
 
 @section{Rendering to Typst}
 
-@link["https://typst.app"]{Typst} is a modern typesetting system for producing PDFs and other
-print-ready documents. Punct's Typst renderer converts your document to Typst markup, which you can
-then compile with the @tt{typst} command-line tool.
+@Typst is a modern typesetting system for producing PDF documents. Punct includes a Typst renderer
+which converts your document to Typst markup, which you can then compile with the @tt{typst}
+command-line tool.
 
 @codeblock|{
 #lang racket
