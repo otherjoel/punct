@@ -13,6 +13,21 @@
          threading
          xml)
 
+(module+ test
+  (require rackunit)
+
+  ;; synthesize-closer: simple tag
+  (check-equal? (synthesize-closer '(html "<P1verse>"))
+                '(html "</P1verse>"))
+
+  ;; synthesize-closer: hyphenated tag name
+  (check-equal? (synthesize-closer '(html "<P1foo-bar>"))
+                '(html "</P1foo-bar>"))
+
+  ;; synthesize-closer: tag with trailing content (real-world case from html-block)
+  (check-equal? (synthesize-closer '(html-block "<P1foo-bar>one two three\n"))
+                '(html "</P1foo-bar>")))
+
 #| Flatpacking
 
 …is my term for taking a (possibly nested) list and disassembling it into a flat structure in
@@ -108,7 +123,7 @@ and 'html-block elements, that can be matched up to reproduce the original s-exp
 ;; Synthesize a closing 'html x-expression for a given opening one
 ;; '(html "<a href='1.html'>) → '(html "</a>")
 (define (synthesize-closer opener)
-  (list 'html (format "</~a>" (cadr (regexp-match #rx"<([a-zA-Z0-9]+)[ |>]" (cadr opener))))))
+  (list 'html (format "</~a>" (cadr (regexp-match #rx"<([^ >]+)[ >]" (cadr opener))))))
 
 (define (assemble-sexpr opener maybe-closer elems)
   (define closer (or maybe-closer (synthesize-closer opener)))

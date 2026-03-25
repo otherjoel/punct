@@ -2,6 +2,7 @@
 
 (require punct/doc
          punct/fetch
+         punct/parse
          racket/match
          racket/runtime-path
          rackunit)
@@ -70,5 +71,13 @@
              '((paragraph "ěščřžýáíé") (paragraph "🧜🏽‍♀️🙅🏽‍♂️👨🏼‍❤️‍💋‍👨🏾"))
              '())
    "Multibyte UTF-8 encodings preserved in meta values and body")
+
+  ;; Blank lines inside element content should not crash the parser
+  (check-not-exn
+   (λ ()
+     (parse-markup-elements
+      '#hasheq()
+      '("Hello" "\n" "\n" (foo-bar "one two three" "\n" "\n" " four five six"))))
+   "Blank line inside element content does not crash")
   )
 
