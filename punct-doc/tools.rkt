@@ -26,19 +26,19 @@
 (define (youtube-embed-element src)
   (element
    (make-style
-   "youtube-embed"
-   (list
-    (make-alt-tag "iframe")
-    (make-attributes `((width           . "700")
-                       (height          . "394")
-                       (src             . ,src)
-                       (frameborder     . "0")
-                       (allowfullscreen . "")))))
+    "youtube-embed"
+    (list
+     (make-alt-tag "iframe")
+     (make-attributes `((width           . "700")
+                        (height          . "394")
+                        (src             . ,src)
+                        (frameborder     . "0")
+                        (allowfullscreen . "")))))
    ""))
 
 (define (callout . args)
-  (paragraph (style "callout" (list (color-property (list #x01 #x46 #x6c))
-                                    (css-style-addition aux-css)
-                                    (alt-tag "div")
-                                    (tex-addition aux-tex)))
+  (paragraph (style "callout refcontent"
+                    (list (css-style-addition aux-css)
+                          (alt-tag "div")
+                          (tex-addition aux-tex)))
              args))

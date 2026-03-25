@@ -1,15 +1,12 @@
 .callout {
-    border-left: 3px solid #bbb;
-    padding: 12px 12px 12px 44px;
+    border: 1px solid #e7be00;
+    border-left-width: 0.4rem;
+    padding: 0.5em 0.5em 0.5em 2.5em;
     display: block;
     position: relative;
     overflow: auto;
-    border-left-color: #0288d1;
     color: #01466c;
-    background-color: #d3efff;
-    font-family: system-ui, sans-serif;
-    font-size: 0.9em;
-    line-height: 1.4;
+    background-color: #ecf8ff;
 }
 
 .callout:before {
@@ -20,7 +17,6 @@
     height: 1.2em;
     left: 12px;
     top: 50%;
-    margin-top: -9px;
     display: inline-block;
     position: absolute;
     opacity: .8;
