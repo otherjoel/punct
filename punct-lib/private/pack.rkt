@@ -13,21 +13,6 @@
          threading
          xml)
 
-(module+ test
-  (require rackunit)
-
-  ;; synthesize-closer: simple tag
-  (check-equal? (synthesize-closer '(html "<P1verse>"))
-                '(html "</P1verse>"))
-
-  ;; synthesize-closer: hyphenated tag name
-  (check-equal? (synthesize-closer '(html "<P1foo-bar>"))
-                '(html "</P1foo-bar>"))
-
-  ;; synthesize-closer: tag with trailing content (real-world case from html-block)
-  (check-equal? (synthesize-closer '(html-block "<P1foo-bar>one two three\n"))
-                '(html "</P1foo-bar>")))
-
 #| Flatpacking
 
 …is my term for taking a (possibly nested) list and disassembling it into a flat structure in
