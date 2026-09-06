@@ -6,6 +6,7 @@
                      "punct-lib"))
 (define deps '("punct-lib"
                "rackunit-lib"
+               "syntax-color-lib"
                "base"))
 (define update-implies '("punct-lib"))
 

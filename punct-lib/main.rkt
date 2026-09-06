@@ -42,11 +42,8 @@
     (λ (key default)
       (case key
         [(color-lexer)
-         (define maybe-lexer
-           (dynamic-require 'syntax-color/scribble-lexer 'make-scribble-inside-lexer (λ () #false)))
-         (cond
-           [(procedure? maybe-lexer) (maybe-lexer #:command-char punct-command-char)]
-           [else default])]
+         (with-handlers ([exn:missing-module? (λ (_) default)])
+           (dynamic-require 'punct/private/color-lexer 'punct-color-lexer))]
         [(drracket:indentation)
          (with-handlers ([exn:missing-module?
                         (λ (x) (default key default))])
