@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require punct/doc
+         punct/element
          punct/fetch
          punct/parse
          racket/match
@@ -79,5 +80,50 @@
       '#hasheq()
       '("Hello" "\n" "\n" (foo-bar "one two three" "\n" "\n" " four five six"))))
    "Blank line inside element content does not crash")
+
+  ;; define-element / default-element-function tests
+  (let ()
+    (define-element kbd #:class "key")
+
+    (check-equal?
+     (kbd "CTRL")
+     '(kbd ((class "key")) "CTRL")
+     "define-element: default keyword attr is applied")
+
+    (check-equal?
+     (kbd "CTRL" #:class "special")
+     '(kbd ((class "special")) "CTRL")
+     "define-element: call-site keyword overrides default (no duplicates)")
+
+    (check-equal?
+     (kbd "CTRL" #:id "main")
+     '(kbd ((class "key") (id "main")) "CTRL")
+     "define-element: non-overlapping call-site keyword is merged with default"))
+
+  (let ()
+    (define el (default-element-function 'span #:class "default" #:id "x"))
+
+    (check-equal?
+     (el "hi" #:class "override")
+     '(span ((id "x") (class "override")) "hi")
+     "default-element-function: duplicate keyword uses call-site value")
+
+    (check-equal?
+     (el "hi" #:class "override" #:id "y")
+     '(span ((class "override") (id "y")) "hi")
+     "default-element-function: both defaults overridden"))
+
+  (let ()
+    (define el (default-element-function 'div))
+
+    (check-equal?
+     (el "hi")
+     '(div "hi")
+     "default-element-function: no attrs when none provided")
+
+    (check-equal?
+     (el "hi" #:class "c")
+     '(div ((class "c")) "hi")
+     "default-element-function: call-site attrs work with no defaults"))
   )
 

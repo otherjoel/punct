@@ -24,7 +24,13 @@
 (define (parse-kw-attrs kw-symbols-in kw-args)
   (define kw-symbols
     (map (λ (kw) (string->symbol (string-trim (keyword->string kw) "#:"))) kw-symbols-in))
-  (map list kw-symbols kw-args))
+  (define all-pairs (map list kw-symbols kw-args))
+  (let loop ([remaining all-pairs])
+    (cond
+      [(null? remaining) '()]
+      [(assoc (caar remaining) (cdr remaining))
+       (loop (cdr remaining))]
+      [else (cons (car remaining) (loop (cdr remaining)))])))
 
 ;; (Symbol [#:Keyword String ...])
 ;;   → (λ ([#:Keyword String ...] . elements) → '(Symbol [[Symbol String] ...] elements ...)

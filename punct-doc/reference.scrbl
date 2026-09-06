@@ -88,6 +88,14 @@ set as default attributes/values in the custom element returned by the resulting
           (kbd "CTRL" #:data-code "1")
           ]
 
+If a keyword argument supplied at the call site has the same name as one of the default attributes, the
+call-site value overrides the default rather than duplicating it:
+
+@examples[#:eval ev
+          (define span (default-element-function 'span #:class "default"))
+          (span "with default" #:id "a")
+          (span "overridden" #:class "custom")]
+
 @margin-note{On Mac OS, type @tt{ALT+6} to produce @litchar{§} and @tt{ALT+7} to produce @litchar{¶}.}
 
 If @racket[tag] ends in either @litchar{§} or @litchar{¶}, the resulting function will add a default
@@ -137,6 +145,14 @@ and for the tag in generated X-expressions:
           (bag "Sunflower seeds")
           (define-element packet¶.foo)
           (packet "Raisins")]
+
+As with @racket[default-element-function], keyword arguments at the call site override any matching
+defaults:
+
+@examples[#:eval ev #:label #f
+          (define-element note aside§ #:class "info")
+          (note "A note")
+          (note "A warning" #:class "warning")]
 
 @history[#:added "1.3"]
 
