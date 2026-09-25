@@ -13,7 +13,7 @@ vector: '#[23 22 9811]
 nemesis-struct: '#s(prefab:clown "Binky" "pie")
 commented-number: '#| this will be equal to fourteen |# 14 
 non-cyclic-graph: '(#1=42 #1# #1#)
-now you're just showing off: '#lang scribble/manual There are @+[3 4] words in this anonymous module
+now you're just showing off: '#lang at-exp racket/base There are @+[3 4] words in this anonymous module
 ---
 
 hello

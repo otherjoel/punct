@@ -31,7 +31,7 @@
              (name-regex . #rx"(Bob|Alice)")
              (nemesis-struct . #s(prefab:clown "Binky" "pie"))
              (non-cyclic-graph . (42 42 42))
-             (|now you're just showing off| . (module anonymous-module scribble/manual/lang (#%module-begin doc " There are " (+ 3 4) " words in this anonymous module")))
+             (|now you're just showing off| . (module anonymous-module racket/base (#%module-begin There are (+ 3 4) words in this anonymous module)))
              (|other- numbers| . (7 5 2/3))
              (title . "This is a normal string value")
              (vector . #(23 22 9811)))

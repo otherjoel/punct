@@ -2,7 +2,7 @@
 
 (define collection "punct")
 
-(define build-deps '("scribble-lib"
+(define build-deps '("at-exp-lib"
                      "punct-lib"))
 (define deps '("punct-lib"
                "rackunit-lib"
