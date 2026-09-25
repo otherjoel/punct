@@ -139,8 +139,38 @@
 ;; Test: Custom/unknown element uses fallback (inside a paragraph)
 (check-equal?
  (doc->typst (make-doc '((paragraph "text " (custom-tag "content")))))
- "text #custom-tag(content)\n\n"
+ "text #custom_tag[content]\n\n"
  "Custom inline tag uses default fallback")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (note ((class "info")) "content")))))
+ "text #note(class: \"info\")[content]\n\n"
+ "Custom tag attributes become named arguments")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (note ((class "info") (data-id "x")) "content")))))
+ "text #note(class: \"info\", data_id: \"x\")[content]\n\n"
+ "Multiple attributes, hyphens in names become underscores")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (my-spacer ((line-height "2em")))))))
+ "text #my_spacer(line_height: \"2em\")\n\n"
+ "Custom tag with attributes and no content omits content block")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (my-spacer)))))
+ "text #my_spacer()\n\n"
+ "Custom tag with no attributes and no content")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (note ((title "say \"hi\" \\ bye")) "content")))))
+ "text #note(title: \"say \\\"hi\\\" \\\\ bye\")[content]\n\n"
+ "Quotes and backslashes in attribute values are escaped")
+
+(check-equal?
+ (doc->typst (make-doc '((paragraph "text " (note "a *b* #c")))))
+ "text #note[a \\*b\\* \\#c]\n\n"
+ "Custom tag content is escaped")
 
 ;; Tests for special character escaping
 
@@ -222,5 +252,3 @@
               '((footnote-definition [[label "fn1"] [ref-count "1"]] (paragraph "Cost: $50")))))
  "Note#footnote[Cost: \\$50]\n\n"
  "Escapes special chars in footnotes")
-
-(displayln "All Typst renderer tests passed!")
