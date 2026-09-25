@@ -72,7 +72,9 @@ elements that may contain flows: @racketid[blockquote], @racketid[item], and
          #:contracts ([content xexpr?])]
 
 @defform[#:kind "txexpr" #:link-target? #f #:literals (style start)
-         (itemization [[style style-str] [start maybe-start]] item ...)
+         (itemization [[style style-str] 
+                       [start maybe-start]] 
+                      item ...)
          #:contracts ([style-str (or/c "loose" "tight")]
                       [maybe-start (or/c "" string?)]
                       [item xexpr?])]
@@ -92,7 +94,9 @@ elements that may contain flows: @racketid[blockquote], @racketid[item], and
          #:contracts ([content xexpr?])]
 
 @defform[#:kind "txexpr" #:link-target? #f #:literals (label ref-count)
-         (footnote-definition [[label lbl] [ref-count rcount]] content ...)
+         (footnote-definition [[label lbl] 
+                               [ref-count rcount]] 
+                              content ...)
          #:contracts ([lbl string?]
                       [rcount string?]
                       [content block-element?])]
@@ -131,7 +135,8 @@ Below is a list of the inline elements that can be produced by the Markdown pars
          #:contracts ([content inline-element?])]
 
 @defform[#:kind "txexpr" #:link-target? #f #:literals (dest title)
-         (link [[dest href] [title title-str]] content ...)
+         (link [[dest href]
+                [title title-str]] content ...)
          #:contracts ([href string?]
                       [title-str string?]
                       [content inline-element?])]
@@ -140,7 +145,9 @@ Below is a list of the inline elements that can be produced by the Markdown pars
          #:contracts ([content inline-element?])]
 
 @defform[#:kind "txexpr" #:link-target? #f #:literals (src title desc)
-        (image [[src source] [title title-str] [desc description]])
+        (image [[src source] 
+                [title title-str]
+                [desc description]])
         #:contracts ([source string?]
                      [title-str string?]
                      [description string?])]
@@ -149,7 +156,9 @@ Below is a list of the inline elements that can be produced by the Markdown pars
          #:contracts ([content inline-element?])]
 
 @defform[#:kind "txexpr" #:link-target? #f #:literals (label defn-num ref-num)
-        (footnote-reference [[label lbl] [defn-num dnum] [ref-num rnum]])
+        (footnote-reference [[label lbl] 
+                             [defn-num dnum]
+                             [ref-num rnum]])
         #:contracts ([lbl string?]
                      [dnum string?]
                      [rnum string?])]
