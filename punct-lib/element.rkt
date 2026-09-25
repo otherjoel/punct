@@ -1,11 +1,26 @@
 #lang racket/base
 
 (require (for-syntax racket/base syntax/parse)
-         "private/quasi-txpr.rkt"
+         "private/element-base.rkt"
          racket/match
          racket/string)
 
-(provide default-element-function define-element)
+(provide default-element-function
+         define-element
+         element
+         element?
+         attr?
+         element-parts
+         make-element
+         element-tag
+         element-attrs
+         element-children
+         element-map
+         element-find
+         element-find*
+         ref-attr
+         set-attr
+         remove-attr)
 
 (module elemrx racket/base
   (define element-id-rx #rx"^([^¶§\\.]+)(§|¶|)(\\..+|)$")
@@ -17,11 +32,11 @@
 ;; '(1 2 3) → (values '() '(1 2 3))
 (define (parse-leading-attrs elems)
   (match elems
-    [(cons (list (? quasi/attr? attrs) ...) xprs) (values attrs xprs)]
+    [(cons (list (? attr? attrs) ...) xprs) (values attrs xprs)]
     [else (values null elems)]))
 
 ;; '(#:class #:id) ("x" "y") → '((class "x") (id "y"))
-(define (parse-kw-attrs kw-symbols-in kw-args)
+(define (parse-kw-attrs tag kw-symbols-in kw-args)
   (define kw-symbols
     (map (λ (kw) (string->symbol (string-trim (keyword->string kw) "#:"))) kw-symbols-in))
   (define all-pairs (map list kw-symbols kw-args))
@@ -30,7 +45,15 @@
       [(null? remaining) '()]
       [(assoc (caar remaining) (cdr remaining))
        (loop (cdr remaining))]
-      [else (cons (car remaining) (loop (cdr remaining)))])))
+      [else
+       (match-define (list key val) (car remaining))
+       (cond
+         [(not val) (loop (cdr remaining))]
+         [(string? val) (cons (car remaining) (loop (cdr remaining)))]
+         [else (raise-arguments-error tag
+                                      "attribute values must be strings or #f"
+                                      "attribute" key
+                                      "value" val)])])))
 
 ;; (Symbol [#:Keyword String ...])
 ;;   → (λ ([#:Keyword String ...] . elements) → '(Symbol [[Symbol String] ...] elements ...)
@@ -45,7 +68,8 @@
        (make-keyword-procedure
         (λ (inner-kws inner-kw-args . xs)
           (let*-values ([(leading-attrs xs) (parse-leading-attrs xs)]
-                        [(kw-attrs) (parse-kw-attrs (append default-kws* inner-kws)
+                        [(kw-attrs) (parse-kw-attrs tag
+                                                    (append default-kws* inner-kws)
                                                     (append default-kwargs* inner-kw-args))])
             (cons tag (match (append kw-attrs leading-attrs)
                         [(== null) xs]

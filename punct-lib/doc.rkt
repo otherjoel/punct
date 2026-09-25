@@ -2,7 +2,7 @@
 
 ; SPDX-License-Identifier: BlueOak-1.0.0
 ; This file is licensed under the Blue Oak Model License 1.0.0.
-(require "private/quasi-txpr.rkt")
+(require "private/element-base.rkt")
 
 (provide (struct-out document) block-element? inline-element?)
 
@@ -19,7 +19,7 @@
 ;; predicates for use in the documentation.
 ;;
 (define (block-element? v)
-  (and (quasi/txexpr? v)
+  (and (element? v)
        (member (car v) '(heading
                          paragraph
                          itemization
@@ -33,5 +33,5 @@
 
 (define (inline-element? v)
   (or (string? v)
-      (and (quasi/txexpr? v)
+      (and (element? v)
            (not (block-element? v)))))

@@ -2,6 +2,7 @@
     border: 1px solid #7ba7cb;
     border-left-width: 0.4rem;
     padding: 0.5em 0.5em 0.5em 2.5em;
+    margin-bottom: 1em;
     display: block;
     position: relative;
     overflow: auto;

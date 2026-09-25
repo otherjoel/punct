@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../private/quasi-txpr.rkt"
+(require "../private/element-base.rkt"
          "../doc.rkt"
          racket/class
          racket/match)
@@ -52,28 +52,28 @@
         [(? string?) (render-string elem)]
           
         ;; CommonMark block-level content
-        [(tx* 'heading (level) elems) (render-heading level (render-elements elems))]
-        [(tx* 'paragraph elems) (render-paragraph (render-elements elems))]
-        [(tx* 'blockquote elems) (render-blockquote (render-elements elems))]
-        [(tx* 'code-block (info) elems) (render-code-block info elems)]
-        [(tx* 'itemization (style start) elems) (render-itemization style start (render-elements elems))]
-        [(tx* 'item elems) (render-item (render-elements elems))]
-        [(tx* 'thematic-break _) (render-thematic-break)]
-        [(tx* 'html-block elem) (render-html-block elem)]
+        [(element* 'heading (level) elems) (render-heading level (render-elements elems))]
+        [(element* 'paragraph elems) (render-paragraph (render-elements elems))]
+        [(element* 'blockquote elems) (render-blockquote (render-elements elems))]
+        [(element* 'code-block (info) elems) (render-code-block info elems)]
+        [(element* 'itemization (style start) elems) (render-itemization style start (render-elements elems))]
+        [(element* 'item elems) (render-item (render-elements elems))]
+        [(element* 'thematic-break _) (render-thematic-break)]
+        [(element* 'html-block elem) (render-html-block elem)]
 
         ;; CommonMark inline content
-        [(tx* 'link (dest title?) elems) (render-link dest title (render-elements elems))]
-        [(tx* 'italic elems) (render-italic (render-elements elems))]
-        [(tx* 'bold elems) (render-bold (render-elements elems))]
-        [(tx* 'code elems) (render-code elems)]  ;; raw elements, like code-block
-        [(tx* 'image (src title? desc?) elems) (render-image src title desc elems)]
-        [(tx* 'footnote-reference (label defn-num ref-num) _)
+        [(element* 'link (dest title?) elems) (render-link dest title (render-elements elems))]
+        [(element* 'italic elems) (render-italic (render-elements elems))]
+        [(element* 'bold elems) (render-bold (render-elements elems))]
+        [(element* 'code elems) (render-code elems)]  ;; raw elements, like code-block
+        [(element* 'image (src title? desc?) elems) (render-image src title desc elems)]
+        [(element* 'footnote-reference (label defn-num ref-num) _)
          (render-footnote-reference label defn-num ref-num)]
-        [(tx* 'line-break _) (render-line-break)]
-        [(tx* 'html elem) (render-html elem)]
+        [(element* 'line-break _) (render-line-break)]
+        [(element* 'html elem) (render-html elem)]
 
         ;; Other
-        [(quasi/txexpr tag attrs elems) (render-fallback tag attrs (render-elements elems))]))
+        [(element tag attrs elems) (render-fallback tag attrs (render-elements elems))]))
     
     (super-new)))
 

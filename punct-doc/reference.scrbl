@@ -19,7 +19,9 @@
 @(define ev (sandbox))
 @(ev '(require punct/doc punct/parse punct/element))
 
-@title{Module Reference}
+@title[#:style 'toc]{Module Reference}
+
+@table-of-contents[]
 
 @section{Core}
 
@@ -61,12 +63,13 @@ is given as a bare identifier (i.e., without using @racket[quote]).
 
 }
 
-@subsection{Elements}
+@section{Elements}
 
 @declare-exporting[punct/element punct/core]
 @defmodule[punct/element #:no-declare]
 
-The bindings provided by this module are also provided by @racketmodname[punct/core].
+The bindings documented in this section are also provided by @racketmodname[punct/core]. The
+bindings in @secref["element-structure"] are provided only by @racketmodname[punct/element].
 
 @defproc[(default-element-function [tag symbol?]
                                    [default-attr-kw keyword?]
@@ -96,6 +99,14 @@ call-site value overrides the default rather than duplicating it:
           (span "with default" #:id "a")
           (span "overridden" #:class "custom")]
 
+Attribute values must be strings. A keyword argument whose value is @racket[#f] is left out, which
+makes it easy to include an attribute only some of the time, and to remove a default at the call
+site. Any other value raises an error.
+
+@examples[#:eval ev
+          (span "no class" #:class #f)
+          (eval:error (span "count" #:count 3))]
+
 @margin-note{On Mac OS, type @tt{ALT+6} to produce @litchar{§} and @tt{ALT+7} to produce @litchar{¶}.}
 
 If @racket[tag] ends in either @litchar{§} or @litchar{¶}, the resulting function will add a default
@@ -117,7 +128,9 @@ additional values to the @racket['class] attribute.
           (define crate (default-element-function 'crate¶.foo))
           (crate "Pecans")]
 
-@history[#:added "1.3"]
+@history[#:added "1.3"
+         #:changed "1.5" @elem{Keyword arguments with a value of @racket[#f] are left out; other
+         values that are not strings raise an error.}]
 
 }
 
@@ -155,6 +168,186 @@ defaults:
           (note "A warning" #:class "warning")]
 
 @history[#:added "1.3"]
+
+}
+
+@defproc[(ref-attr [attrs (listof attr?)] [key symbol?] [default any/c #f]) any/c]{
+
+Returns the value of the @racket[_key] attribute in @racket[_attrs], or @racket[_default] if there is
+no such attribute. This is useful in a @tech{fallback function}, which receives the attributes of an
+element as a separate list.
+
+@examples[#:eval ev
+          (ref-attr '((class "info") (id "a")) 'id)
+          (ref-attr '((class "info")) 'id)
+          (ref-attr '((class "info")) 'id "none")]
+
+@history[#:changed "1.5" @elem{Added the @racket[_default] argument.}]
+
+}
+
+@subsection[#:tag "element-structure"]{Working with elements}
+
+@declare-exporting[punct/element]
+
+These functions take apart, change and search the @tech{elements} produced by Punct's parse.
+They follow the same rules Punct uses everywhere:
+
+@itemlist[
+@item{An @deftech{element} is any non-empty list whose first item is a symbol (its @deftech{tag}).}
+@item{If the second item is a list of attributes (each a two-item list of a symbol and a string),
+it is the element's attribute list. Everything after that is a child.}
+@item{Children are not checked: they can be strings, other elements, or any other values.}
+]
+
+@callout{In the interests of speed, the implementations of these functions do not use contracts or
+check their arguments. The signatures below describe what each function expects; if you give it
+something else, expect error messages.}
+
+@callout{Note that the @racketmodname[xml] library also provides bindings named @tt{element},
+@tt{element?} and @tt{make-element}. If you need both libraries in one module, use @racket[only-in] or
+@racket[prefix-in] for one of them.}
+
+@defproc[(element? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[_v] is a non-empty list whose first item is a symbol.
+
+@examples[#:eval ev
+          (element? '(p "Hello"))
+          (element? '(br))
+          (element? "Hello")
+          (element? '())]
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(attr? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[_v] is a two-item list of a symbol and a string.
+
+@examples[#:eval ev
+          (attr? '(class "info"))
+          (attr? '(count 3))]
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(element-parts [elem element?]) (values symbol? (listof attr?) list?)]{
+
+Returns the tag, attributes and children of @racket[_elem]. The attributes are @racket['()] if
+@racket[_elem] has none.
+
+A list in the second position that has a value that is not a string is not an attribute list, so it
+is returned as the first child.
+
+@examples[#:eval ev
+          (element-parts '(p ((class "x")) "a" (em "b")))
+          (element-parts '(p "a"))
+          (element-parts '(p ((count 3)) "a"))]
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(make-element [tag symbol?] [attrs (listof attr?) '()] [children list? '()]) element?]{
+
+Builds an element. If @racket[_attrs] is empty, it is left out.
+
+@examples[#:eval ev
+          (make-element 'p '((class "x")) '("a"))
+          (make-element 'p '() '("a"))]
+
+@history[#:added "1.5"]
+
+}
+
+@deftogether[(@defproc[(element-tag [elem element?]) symbol?]
+              @defproc[(element-attrs [elem element?]) (listof attr?)]
+              @defproc[(element-children [elem element?]) list?])]{
+
+Return one part of @racket[_elem]. See @racket[element-parts].
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(set-attr [attrs (listof attr?)] [key symbol?] [val string?]) (listof attr?)]{
+
+Returns @racket[_attrs] with the @racket[_key] attribute set to @racket[_val]. An existing attribute
+keeps its position; a new one is added at the end.
+
+@examples[#:eval ev
+          (set-attr '((href "/x") (title "X")) 'href "/y")
+          (set-attr '((href "/x")) 'rel "external")]
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(remove-attr [attrs (listof attr?)] [key symbol?]) (listof attr?)]{
+
+Returns @racket[_attrs] without the @racket[_key] attribute.
+
+@examples[#:eval ev
+          (remove-attr '((id "a") (class "x")) 'id)]
+
+@history[#:added "1.5"]
+
+}
+
+@defproc[(element-map [proc (-> any/c any/c)] [v any/c]) any/c]{
+
+Calls @racket[_proc] on @racket[_v] and every node inside it, children first, and builds a new tree
+from the results. Because children are done first, @racket[_proc] receives each element with its
+children already replaced. @racket[_proc] receives strings and other non-element values too, but
+never attribute lists.
+
+@examples[#:eval ev
+          (element-map (λ (x) (if (string? x) (string-upcase x) x))
+                       '(p ((class "x")) "a" (em "b")))
+          (require racket/match)
+          (element-map (match-lambda
+                         [(element 'a attrs kids) (make-element 'a (set-attr attrs 'rel "external") kids)]
+                         [x x])
+                       '(p "See " (a ((href "https://example.com")) "this")))]
+
+@history[#:added "1.5"]
+
+}
+
+@deftogether[(@defproc[(element-find [pred (-> element? any/c)] [v any/c]) (or/c element? #f)]
+              @defproc[(element-find* [pred (-> element? any/c)] [v any/c]) (listof element?)])]{
+
+Search @racket[_v] and the elements inside it, in document order: a parent comes before its
+children. Only elements are passed to @racket[_pred]. @racket[element-find] returns the first
+element for which @racket[_pred] returns a true value, or @racket[#f]; @racket[element-find*] returns
+all of them, or @racket['()].
+
+@examples[#:eval ev
+          (define (link? e) (eq? (element-tag e) 'link))
+          (define body '(paragraph (link ((dest "/a")) "A") " and " (bold (link ((dest "/b")) "B"))))
+          (element-find link? body)
+          (element-find* link? body)
+          (element-find* (λ (e) (eq? (element-tag e) 'table)) body)]
+
+@history[#:added "1.5"]
+
+}
+
+@defform[#:kind "match expander" (element tag-pat attrs-pat children-pat)]{
+
+Matches an element, and matches its tag, attributes and list of children against the three
+patterns. @racket[_attrs-pat] is matched against @racket['()] if the element has no attributes.
+
+@examples[#:eval ev
+          (match '(a ((href "/x")) "X")
+            [(element 'a (list-no-order (list 'href url) _ ...) kids) (list url kids)])
+          (match '(p "Hello")
+            [(element tag '() kids) (list tag kids)])]
+
+@history[#:added "1.5"]
 
 }
 

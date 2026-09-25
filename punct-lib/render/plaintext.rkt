@@ -94,7 +94,7 @@
 
     (define/override (render-itemization style start elems)
       (string-append*
-       (if (equal? start (~a #f))
+       (if (equal? start "")
            (map (λ (e) (wrap-text e width #:first-line-prefix " * ")) elems)
            (for/list ([item (in-list elems)] [i (in-naturals 1)])
              (wrap-text item width #:first-line-prefix (format "~a. " i))))))

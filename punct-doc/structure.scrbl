@@ -37,7 +37,10 @@ the form of nested structs. Punct converts both of these into lists of tagged X-
 allow for greater flexibility in adding @secref{custom}.
 
 @history[#:changed "1.0" @elem{@racket[_body] and @racket[_footnotes] now guaranteed to be valid
-X-expressions and not simply lists.}]
+X-expressions and not simply lists.}
+         #:changed "1.5" @elem{A custom element with an attribute value that is not a string now
+raises an error. Before, the value was silently converted to a string, so that @racket[#f] became
+@racket["#f"].}]
 
 }
 
@@ -180,7 +183,9 @@ elements; also, unlike Pollen tags, custom elements may be treated differently d
 @tech{block attributes}.}
 
 A custom element may optionally have a set of @deftech{attributes}, which is a list of key/value
-pairs that appears as the second item in the list.
+pairs that appears as the second item in the list. Each key is a symbol and each value is a string;
+if a value is not a string, Punct raises an error when it evaluates the document. See
+@secref["element-structure"] for functions that work with elements and their attributes.
 
 Here is an example of a function that produces a custom @tt{abbreviation} element with a @tt{term}
 attribute:

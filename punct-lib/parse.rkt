@@ -11,7 +11,7 @@
          commonmark/private/render
          "private/constants.rkt"
          "private/pack.rkt"
-         "private/quasi-txpr.rkt"
+         "private/element-base.rkt"
          racket/class
          (only-in racket/format ~a)
          racket/list
@@ -125,10 +125,10 @@ after rendering a single document.
 (define (decode-single-blocks lst)
   (let loop ([x lst])
     (match x
-      [(list 'paragraph (list (? symbol? tag) (list-no-order (list 'block blocktype) (? quasi/attr? attrs) ...) elems ...))
+      [(list 'paragraph (list (? symbol? tag) (list-no-order (list 'block blocktype) (? attr? attrs) ...) elems ...))
        #:when (equal? blocktype punct-block-single)
        `(,tag ,@(if (null? attrs) '() (list attrs)) ,@(map decode-single-blocks elems))]
-      [(list* (? symbol? tag) (list (? quasi/attr? attrs) ...) elems)
+      [(list* (? symbol? tag) (list (? attr? attrs) ...) elems)
        `(,tag ,attrs ,@(map decode-single-blocks elems))]
       [(list* (? symbol? tag) elems)
        `(,tag ,@(map decode-single-blocks elems))]
