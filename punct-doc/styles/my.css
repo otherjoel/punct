@@ -1,5 +1,5 @@
 .callout {
-    border: 1px solid #e7be00;
+    border: 1px solid #7ba7cb;
     border-left-width: 0.4rem;
     padding: 0.5em 0.5em 0.5em 2.5em;
     display: block;
@@ -16,7 +16,7 @@
     width: 1.2em;
     height: 1.2em;
     left: 12px;
-    top: 50%;
+    top: 0.75em;
     display: inline-block;
     position: absolute;
     opacity: .8;
