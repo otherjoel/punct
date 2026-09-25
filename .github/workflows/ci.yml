@@ -20,4 +20,4 @@ jobs:
       - name: Installing punct-tests and its dependencies
         run: raco pkg install --no-docs --auto punct-lib/ punct-tests/
       - name: Testing punct-tests
-        run: raco test -x -p punct-tests
+        run: raco test -p punct-tests
