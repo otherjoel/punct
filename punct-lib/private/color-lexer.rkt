@@ -31,8 +31,10 @@
 (struct tok (len type markup))
 
 (define (punct-color-lexer in offset mode)
-  (define-values (_line col pos) (port-next-location in))
-  (define m (or mode (md #f 'start (eqv? col 0) #f 0)))
+  (define-values (_line _col pos) (port-next-location in))
+  ;; A fresh port's column is 0 wherever it starts, so only the absolute
+  ;; position shows whether the stream begins at a line start
+  (define m (or mode (md #f 'start (= (+ offset pos) 1) #f 0)))
   (define fin (special-filter-input-port in (λ (v s) (bytes-set! s 0 (char->integer #\.)) 1)))
   (define pk (peeking-input-port fin #:init-position pos))
   (port-count-lines! pk)
@@ -48,7 +50,10 @@
     [(text)
      (define-values (t block heading? bol?) (run-token text m))
      (define last? (= (tok-len t) len))
-     (emit (tok-len t) (retag attribs t) (+ backup (md-off m))
+     ;; Metas pieces never depend on later text, so they skip the backup that
+     ;; colorers before racket/gui#377 mishandle
+     (emit (tok-len t) (retag attribs t)
+           (if (eq? (md-block m) 'metas) backup (+ backup (md-off m)))
            (md (if last? inner* (md-inner m)) block bol? heading?
                (if last? 0 (+ (md-off m) (tok-len t)))))]
     [(white-space)

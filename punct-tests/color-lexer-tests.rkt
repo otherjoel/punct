@@ -12,13 +12,14 @@
 
 ;; Runs lexer over src from position pos with mode, checking that tokens are
 ;; contiguous. Each result is (text attribs backup mode-before).
-(define (lex-raw src [lexer punct-color-lexer] #:from [pos 1] #:mode [mode #f])
+(define (lex-raw src [lexer punct-color-lexer]
+                 #:from [pos 1] #:mode [mode #f] #:offset [offset 0])
   (define in (open-input-string src))
   (port-count-lines! in)
   (read-string (sub1 pos) in)
   (let loop ([mode mode] [pos pos] [acc '()])
     (define-values (lexeme attribs paren start end backup new-mode)
-      (lexer in 0 mode))
+      (lexer in offset mode))
     (check-equal? start pos (format "token starts where the last one ended, in ~s" src))
     (if (eq? attribs 'eof)
         (reverse acc)
@@ -27,8 +28,8 @@
                     acc)))))
 
 ;; Non-whitespace tokens as (text type markup)
-(define (tokens src [lexer punct-color-lexer])
-  (for/list ([t (in-list (lex-raw src lexer))]
+(define (tokens src [lexer punct-color-lexer] #:offset [offset 0])
+  (for/list ([t (in-list (lex-raw src lexer #:offset offset))]
              #:unless (eq? (type-of (second t)) 'white-space))
     (list (first t) (type-of (second t)) (attrib (second t) 'markup))))
 
@@ -240,6 +241,13 @@
                   ("---" hash-colon-keyword meta)
                   ("k: " hash-colon-keyword meta)
                   ("v" text #f)
+                  ("---" hash-colon-keyword meta)))
+  ;; An editor resuming after the #lang token opens a fresh port there
+  (check-equal? (tokens " jdcom\n---\nk: v\n---\n" #:offset 11)
+                '((" jdcom" text #f)
+                  ("---" hash-colon-keyword meta)
+                  ("k: " hash-colon-keyword meta)
+                  ("v" text #f)
                   ("---" hash-colon-keyword meta))))
 
 (test-case "the comment flag survives splitting"
@@ -253,6 +261,10 @@
 (test-case "sub-tokens report their offset in the run as backup"
   (check-equal? (map third (lex-raw "Some *emph* end\n"))
                 '(0 5 11 0)))
+
+(test-case "metas sub-tokens report no backup"
+  (check-equal? (map third (lex-raw "---\ntitle: Iceland\n---\n"))
+                '(0 0 0 0 0 0 0)))
 
 (test-case "lexing can resume at any token with its recorded mode"
   (for-each check-restartable
