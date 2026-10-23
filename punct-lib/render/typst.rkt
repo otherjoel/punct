@@ -5,7 +5,9 @@
 
 ;; Renders punct documents to Typst markup
 
-(require "base.rkt"
+(require (for-syntax racket/base
+                     syntax/parse)
+         "base.rkt"
          "../doc.rkt"
          racket/class
          racket/format
@@ -16,7 +18,9 @@
          doc->typst
          default-typst-tag
          escape-typst-text
-         escape-typst-string)
+         escape-typst-string
+         typst-rules
+         define-typst-rules)
 
 ;; Escape special Typst characters in text content
 ;; Uses Perl-compatible regex for proper character class handling
@@ -159,8 +163,8 @@
       "")))
 
 ;; Main entry point
-(define (doc->typst doc [fallback default-typst-tag])
-  (send (new punct-typst-render% [doc doc] [render-fallback fallback])
+(define (doc->typst doc [rules default-typst-tag])
+  (send (new punct-typst-render% [doc doc] [render-fallback rules])
         render-document))
 
 ;; Convert symbol to valid Typst identifier (hyphens → underscores)
@@ -186,3 +190,16 @@
     [(null? attrs) (~a "#" tag-id "[" content "]")]
     [(null? elems) (~a "#" tag-id "(" attr-str ")")]
     [else (~a "#" tag-id "(" attr-str ")[" content "]")]))
+
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; Rules shorthand
+
+(define-syntax (typst-rules stx)
+  (syntax-parse stx
+    [(_ (tag-id:id attrs-id:id elems-id:id) clause ...)
+     #'(rules (tag-id attrs-id elems-id) #:default default-typst-tag clause ...)]))
+
+(define-syntax (define-typst-rules stx)
+  (syntax-parse stx
+    [(_ (name:id tag-id:id attrs-id:id elems-id:id) clause ...)
+     #'(define name (typst-rules (tag-id attrs-id elems-id) clause ...))]))

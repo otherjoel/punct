@@ -5,7 +5,9 @@
 
 ;; Renders interpunct documents to HTML x-expressions
 
-(require "base.rkt"
+(require (for-syntax racket/base
+                     syntax/parse)
+         "base.rkt"
          net/uri-codec
          racket/class
          racket/format
@@ -18,7 +20,9 @@
 (provide punct-html-render%
          doc->html
          doc->html-xexpr
-         default-html-tag)
+         default-html-tag
+         html-rules
+         define-html-rules)
 
 (define punct-html-render%
   (class punct-abstract-render%
@@ -93,11 +97,24 @@
     
     (super-new)))
 
-(define (doc->html-xexpr doc [fallback default-html-tag])
-  (send (new punct-html-render% [doc doc] [render-fallback fallback]) render-document))
+(define (doc->html-xexpr doc [rules default-html-tag])
+  (send (new punct-html-render% [doc doc] [render-fallback rules]) render-document))
 
-(define (doc->html doc [fallback default-html-tag])
-  (xexpr->string (doc->html-xexpr doc fallback)))
+(define (doc->html doc [rules default-html-tag])
+  (xexpr->string (doc->html-xexpr doc rules)))
 
 (define (default-html-tag tag attrs elems)
   `(,tag ,@(if (null? attrs) '() (list attrs)) ,@elems))
+
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; Rules shorthand
+
+(define-syntax (html-rules stx)
+  (syntax-parse stx
+    [(_ (tag-id:id attrs-id:id elems-id:id) clause ...)
+     #'(rules (tag-id attrs-id elems-id) #:default default-html-tag clause ...)]))
+
+(define-syntax (define-html-rules stx)
+  (syntax-parse stx
+    [(_ (name:id tag-id:id attrs-id:id elems-id:id) clause ...)
+     #'(define name (html-rules (tag-id attrs-id elems-id) clause ...))]))

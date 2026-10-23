@@ -174,7 +174,7 @@ defaults:
 @defproc[(ref-attr [attrs (listof attr?)] [key symbol?] [default any/c #f]) any/c]{
 
 Returns the value of the @racket[_key] attribute in @racket[_attrs], or @racket[_default] if there is
-no such attribute. This is useful in a @tech{fallback function}, which receives the attributes of an
+no such attribute. This is useful in a @tech{rules function}, which receives the attributes of an
 element as a separate list.
 
 @examples[#:eval ev
@@ -423,66 +423,70 @@ renderer class that you can extend to customize the rendering process or to targ
 
 When rendering your document to a specific output format (such as HTML) Punct has to decide how to
 render any @tech{custom elements} introduced by your code. When Punct encounters a custom element,
-it passes it to a @deftech{fallback function}: the fallback function receives three arguments: the
-custom element’s tag, its attributes, and a list of sub-elements found inside the element. The
-sub-elements will already have been fully processed by Punct.
+it passes it to a @deftech{rules function}, which receives three arguments: the custom element’s tag,
+its attributes, and a list of sub-elements found inside the element. The sub-elements will already
+have been fully processed by Punct.
 
-A separate @tech{fallback function} is needed for each output format you want to target. Punct
-provides default fallback functions the target output format it supports natively. For example, when
-targeting HTML, Punct defaults to @racket[default-html-tag], which simply converts custom elements
-to HTML elements. If you want more customized behavior, you'll need to provide your own fallback
-procedure to the renderer.
+A separate @tech{rules function} is needed for each output format you want to target. Each of
+Punct’s renderers has a default: for example, when targeting HTML, Punct uses
+@racket[default-html-tag], which simply converts custom elements to HTML elements. If you want more
+customized behavior, provide your own rules function to the renderer.
 
-Here's an example pair of functions for rendering documents containing the custom @tt{abbreviation}
-element (from the examples above) into HTML:
+The easiest way to make a rules function is with @racket[define-html-rules],
+@racket[define-typst-rules], or (for any other format) @racket[define-rules]. Here's a pair of
+functions for rendering documents containing the custom @tt{abbreviation} element (from the
+examples above) into HTML:
 
 @racketblock[
 
-(define (custom-html tag attrs elems)
-  (match (list tag attrs)
-    [`(abbreviation [[term ,term]]) `(abbr [[title ,term]] ,@elems)]))
+(define-html-rules (custom-html tag attrs elems)
+  [(abbreviation term) `(abbr [[title ,term]] ,@elems)])
 
 (define (my-html-renderer source-path)
   (doc->html (get-doc source-path) custom-html))
 
 ]
 
+Any element that no rule covers goes to @racket[default-html-tag]. See @racket[rules] for the full
+syntax. A rules function is an ordinary function, so you can also write one yourself, for example
+with @racket[match].
+
 @subsection{HTML}
 
 @defmodule[punct/render/html]
 
 @defproc[(doc->html [pdoc document?]
-                    [fallback (-> symbol?
-                                  (listof (list/c symbol? string?))
-                                  (listof xexpr?)
-                                  xexpr?) default-html-tag])
+                    [rules (-> symbol?
+                               (listof (list/c symbol? string?))
+                               (listof xexpr?)
+                               xexpr?) default-html-tag])
          string?]{
 
 Renders @racket[_pdoc] into a string containing HTML markup. Each @tech{custom element} is passed to
-@racket[_fallback], which must return an @racketlink[xexpr?]{X-expression}.
+@racket[_rules], which must return an @racketlink[xexpr?]{X-expression}.
 
 This function uses @racket[xexpr->string] to generate the HTML string. This function will blindly
 escape characters inside @racketoutput{<script>} and @racketoutput{<style>} tags, which may
 introduce errors. For HTML output that is friendlier and more correct, consider using the
 @racketmodname[html-printer #:indirect] package in concert with @racket[doc->html-xexpr].
 
-For more information on using the @racket[_fallback] argument to render custom elements, see
+For more information on using the @racket[_rules] argument to render custom elements, see
 @secref["rendering-custom-elements"].
 
 }
 
 @defproc[(doc->html-xexpr [pdoc document?]
-                          [fallback (-> symbol?
-                                        (listof (list/c symbol? string?))
-                                        (listof xexpr?)
-                                        xexpr?) default-html-tag])
+                          [rules (-> symbol?
+                                     (listof (list/c symbol? string?))
+                                     (listof xexpr?)
+                                     xexpr?) default-html-tag])
          xexpr?]{
 
 Renders @racket[_pdoc] into HTML, but in @racketlink[xexpr?]{X-expression} form rather than as a
-string. Each @tech{custom element} is passed to @racket[_fallback], which must itself return an
+string. Each @tech{custom element} is passed to @racket[_rules], which must itself return an
 X-expression.
 
-For more information on using the @racket[_fallback] argument to render custom elements, see
+For more information on using the @racket[_rules] argument to render custom elements, see
 @secref["rendering-custom-elements"].
 
 }
@@ -493,13 +497,51 @@ For more information on using the @racket[_fallback] argument to render custom e
          xexpr?]{
 
 Returns an X-expression comprised of @racket[_tag], @racket[_attributes] and @racket[_elements].
-Mainly used as the default @tech{fallback function} for @racket[doc->html].
+This is the default @tech{rules function} for @racket[doc->html], and the default for any element
+that no rule covers in @racket[html-rules].
 
 @examples[#:eval ev
 (require punct/render/html)
 (default-html-tag 'kbd '() '("Enter"))
 (default-html-tag 'a '((href "http://example.com")) '("Link"))
 ]
+}
+
+@deftogether[(
+@defform[(html-rules (tag-id attrs-id elems-id)
+                     clause ...
+                     maybe-else)]
+@defform[(define-html-rules (id tag-id attrs-id elems-id)
+                            clause ...
+                            maybe-else)]
+)]{
+
+The @racket[html-rules] form produces a @tech{rules function} for @racket[doc->html] and
+@racket[doc->html-xexpr]. It is the same as
+@racket[(rules (tag-id attrs-id elems-id) #:default default-html-tag clause ... maybe-else)]; see
+@racket[rules] for the syntax of each @racket[clause].
+
+The @racket[define-html-rules] form binds @racket[id] to such a function. It is the same as
+@racket[(define id (html-rules (tag-id attrs-id elems-id) clause ... maybe-else))].
+
+@examples[#:eval ev
+(require punct/render/html)
+(define-html-rules (my-html tag attrs elems)
+  [margin-note #:as aside.margin]
+  [(or webversion unsubscribe) ""]
+  [(youtube video [title "Video"])
+   `(iframe [[src ,(string-append "https://www.youtube.com/embed/" video)]
+             [title ,title]])]
+  [(abbreviation term) `(abbr [[title ,term]] ,@elems)])
+(my-html 'margin-note '((block "root")) '("A note"))
+(my-html 'unsubscribe '() '("Unsubscribe"))
+(my-html 'youtube '((video "dQw4w9WgXcQ")) '())
+(my-html 'abbreviation '((term "HyperText Markup Language")) '("HTML"))
+(my-html 'abbreviation '() '("HTML"))
+(my-html 'kbd '() '("Enter"))
+]
+
+@history[#:added "1.6"]
 }
 
 @defclass[punct-html-render% punct-abstract-render% ()]{
@@ -519,11 +561,11 @@ See @secref["extending-renderer"] for examples of extending the HTML renderer.
 This renderer produces Typst markup from Punct documents.
 
 @defproc[(doc->typst [pdoc document?]
-                     [fallback (symbol? (listof (listof symbol? string?)) list? . -> . string?)
-                               default-typst-tag]) string?]{
+                     [rules (symbol? (listof (listof symbol? string?)) list? . -> . string?)
+                            default-typst-tag]) string?]{
 
 Renders @racket[_pdoc] into a string containing Typst markup. Any @tech{custom elements} are passed
-to @racket[_fallback], which must return a string.
+to @racket[_rules], which must return a string.
 
 Markdown/Punct elements are mapped to Typst syntax as follows:
 
@@ -548,7 +590,7 @@ Typst special characters (@litchar{*}, @litchar{_}, @litchar{`}, @litchar{#},
 allowing the same Punct source to target both HTML and Typst without manual escaping. Content inside
 code blocks and inline code is not escaped, as Typst renders these literally.
 
-For more information on using the @racket[_fallback] argument to render custom elements, see
+For more information on using the @racket[_rules] argument to render custom elements, see
 @secref["rendering-custom-elements"].
 
 @history[#:added "1.4"]
@@ -558,7 +600,8 @@ For more information on using the @racket[_fallback] argument to render custom e
 @defproc[(default-typst-tag [tag symbol?] [attributes (listof (listof symbol? string?))] [elements list?]) string?]{
 
 Returns a Typst function call string using @racket[_tag], @racket[_attributes], and @racket[_elements].
-Mainly used as the default @tech{fallback function} for @racket[doc->typst].
+This is the default @tech{rules function} for @racket[doc->typst], and the default for any element
+that no rule covers in @racket[typst-rules].
 
 The output format is @tt{#tag(attr: "val", ...)[content]}, where attributes become named arguments
 with string values, and elements become a trailing content block. When there are no attributes,
@@ -568,7 +611,7 @@ is omitted: @tt{#tag(attr: "val")}.
 Hyphens in @racket[_tag] and attribute names are converted to underscores to produce valid Typst
 identifiers (e.g., @racket['my-element] becomes @tt{my_element}).
 
-Note that @racket[_elements] are already escaped when passed to the fallback. Attribute values
+Note that @racket[_elements] are already escaped when passed to a rules function. Attribute values
 are automatically escaped and quoted as Typst strings.
 
 @examples[#:eval ev
@@ -586,7 +629,7 @@ are automatically escaped and quoted as Typst strings.
 
 Escapes special Typst characters (@litchar{*}, @litchar{_}, @litchar{`}, @litchar{#},
 @litchar["@"], @litchar{$}, @litchar{[}, @litchar{]}, @litchar{\}) in @racket[_str] by
-prefixing them with backslashes. Use this for text content in custom fallback procedures.
+prefixing them with backslashes. Use this for text content in your own @tech{rules functions}.
 
 @history[#:added "1.4"]
 
@@ -599,6 +642,44 @@ Escapes backslashes and double quotes in @racket[_str] for use within quoted Typ
 
 @history[#:added "1.4"]
 
+}
+
+@deftogether[(
+@defform[(typst-rules (tag-id attrs-id elems-id)
+                      clause ...
+                      maybe-else)]
+@defform[(define-typst-rules (id tag-id attrs-id elems-id)
+                             clause ...
+                             maybe-else)]
+)]{
+
+The @racket[typst-rules] form produces a @tech{rules function} for @racket[doc->typst]. It is the
+same as
+@racket[(rules (tag-id attrs-id elems-id) #:default default-typst-tag clause ... maybe-else)]; see
+@racket[rules] for the syntax of each @racket[clause].
+
+The @racket[define-typst-rules] form binds @racket[id] to such a function. It is the same as
+@racket[(define id (typst-rules (tag-id attrs-id elems-id) clause ... maybe-else))].
+
+The @racket[elems-id] is bound to strings that are already rendered and escaped. Attribute values
+are not escaped: use @racket[escape-typst-string] or @racket[escape-typst-text] on them. An
+@racket[#:as] clause gives its class names to @racket[default-typst-tag] as a @tt{class} argument,
+so the Typst function must accept one.
+
+@examples[#:eval ev
+(require punct/render/typst)
+(define-typst-rules (my-typst tag attrs elems)
+  [margin-note #:as aside]
+  [warning #:as callout.alert]
+  [(abbreviation term)
+   (format "#abbr(\"~a\")[~a]" (escape-typst-string term) (apply string-append elems))])
+(my-typst 'margin-note '((block "root")) '("A note"))
+(my-typst 'warning '() '("Hot!"))
+(my-typst 'abbreviation '((term "HyperText Markup Language")) '("HTML"))
+(my-typst 'kbd '() '("Enter"))
+]
+
+@history[#:added "1.6"]
 }
 
 @defclass[punct-typst-render% punct-abstract-render% ()]{
@@ -619,16 +700,16 @@ as when generating the plaintext version of an email newsletter.
 
 @defproc[(doc->plaintext [pdoc document?]
                          [line-width exact-nonnegative-integer?]
-                         [fallback (-> symbol?
-                                       (listof (list/c symbol? string?))
-                                       (listof xexpr?)
-                                       xexpr?)
-                                   (make-plaintext-fallback line-width)])
+                         [rules (-> symbol?
+                                    (listof (list/c symbol? string?))
+                                    (listof xexpr?)
+                                    xexpr?)
+                                (make-plaintext-fallback line-width)])
                          string?]{
 
 Renders @racket[_pdoc] into a string of plain text, hard-wrapped to @racket[_line-width] characters
 (except for block-quotes, which are hard-wrapped to a length approximately 75% as long as
-@racket[_line-width]). Any @tech{custom elements} are passed to @racket[_fallback], which must
+@racket[_line-width]). Any @tech{custom elements} are passed to @racket[_rules], which must
 return a string.
 
 The function applies very rudimentary text formatting which usually looks as you would expect, but
@@ -648,7 +729,7 @@ parentheses; the source URL and title are discarded.}
 
 ]
 
-For more information on using the @racket[_fallback] argument to render custom elements, see
+For more information on using the @racket[_rules] argument to render custom elements, see
 @secref["rendering-custom-elements"].
 
 @examples[#:eval ev
@@ -662,7 +743,9 @@ For more information on using the @racket[_fallback] argument to render custom e
          (symbol? (listof (listof symbol? string?)) list? . -> . string?)]{
 
 Returns a function that accepts three arguments (the tag, attributes and elements of an
-X-expression).  Mainly used to create the default fallback procedure for @racket[doc->plaintext].
+X-expression).  Mainly used to create the default @tech{rules function} for @racket[doc->plaintext].
+To make your own rules for plain text, use @racket[define-rules] with this function as the
+@racket[#:default].
 
 @examples[#:eval ev
 (define foo (make-plaintext-fallback 72))
@@ -687,8 +770,8 @@ extend this class.
                                       list?
                                       any/c)])]{
 Creates a new renderer instance. The @racket[doc] argument is the Punct document to render.
-The @racket[render-fallback] procedure is called for any @tech{custom elements} encountered
-during rendering.
+The @racket[render-fallback] procedure is the @tech{rules function}: it is called for any
+@tech{custom elements} encountered during rendering.
 }
 
 @defmethod[(render-document) any/c]{
@@ -733,3 +816,78 @@ To create a custom renderer, extend this class and implement all of the abstract
 
 }
 
+@;------------------------------------------------
+
+@subsection{Base rules}
+@declare-exporting[punct/render/base]
+
+@deftogether[(
+@defform[(rules (tag-id attrs-id elems-id) #:default default-expr
+                clause ...
+                maybe-else)]
+@defform[#:literals (else or)
+         (define-rules (id tag-id attrs-id elems-id) #:default default-expr
+                       clause ...
+                       maybe-else)
+         #:grammar
+         [(clause [head maybe-when #:as new-tag]
+                  [head maybe-when body ...+])
+          (head tag
+                (tag attr-spec ...)
+                (or tag ...+))
+          (attr-spec attr-id
+                     [attr-id attr-default-expr])
+          (maybe-when (code:line)
+                      (code:line #:when guard-expr))
+          (maybe-else (code:line)
+                      [else body ...+])]]
+)]{
+
+The @racket[rules] form produces a @tech{rules function} for any renderer. The
+@racket[define-rules] form binds @racket[id] to such a function: it is the same as
+@racket[(define id (rules (tag-id attrs-id elems-id) #:default default-expr clause ... maybe-else))].
+Most of the time you will use @racket[html-rules] or @racket[typst-rules] (or their @racketidfont{define-}
+forms), which supply @racket[default-expr] for you.
+
+The function takes three arguments, bound to @racket[tag-id], @racket[attrs-id] and
+@racket[elems-id] inside every @racket[clause], and tries each @racket[clause] in order. The first
+one whose @racket[head] matches the element (and whose @racket[guard-expr], if any, is true) gives
+the result.
+
+A @racket[head] matches an element when:
+
+@itemlist[
+@item{it is the element's @racket[tag];}
+@item{it is @racket[(tag attr-spec ...)], the element's tag is @racket[tag], and the element has
+every attribute named by a plain @racket[attr-id]. Each @racket[attr-id] is bound to the value of
+that attribute. An @racket[[attr-id attr-default-expr]] binds @racket[attr-id] to
+@racket[attr-default-expr] when the attribute is missing;}
+@item{it is @racket[(or tag ...+)] and the element's tag is one of the @racket[tag]s.}
+]
+
+An element that is missing a required attribute does not match, and the next clause is tried.
+
+The @racket[default-expr] is evaluated once, when the rules function is made, and must produce a
+@tech{rules function}. A clause with @racket[#:as new-tag] calls it with a new tag, the element's
+children, and no other attributes. The @racket[new-tag] is a tag name, optionally followed by class
+names that each start with a period: for example, @racket[#:as aside.note.wide] gives the same
+result as @racket[(default 'aside '((class "note wide")) elems)]. A clause with @racket[body] forms
+gives the result of the last @racket[body].
+
+An element that matches no clause goes to the @racket[else] clause, or to the default if there is
+no @racket[else] clause.
+
+@examples[#:eval ev
+(require punct/render/base punct/render/plaintext)
+(define-rules (my-text tag attrs elems)
+  #:default (make-plaintext-fallback 72)
+  [(or webversion unsubscribe) ""]
+  [margin-note #:as note]
+  [(abbreviation term) (format "~a (~a)" (apply string-append elems) term)])
+(my-text 'unsubscribe '() '("Unsubscribe"))
+(my-text 'margin-note '() '("A note"))
+(my-text 'abbreviation '((term "HyperText Markup Language")) '("HTML"))
+]
+
+@history[#:added "1.6"]
+}

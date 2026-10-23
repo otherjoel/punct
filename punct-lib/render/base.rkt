@@ -1,11 +1,16 @@
 #lang racket/base
 
-(require "../private/element-base.rkt"
+(require (for-syntax racket/base
+                     racket/string
+                     syntax/parse)
+         "../private/element-base.rkt"
          "../doc.rkt"
          racket/class
          racket/match)
 
-(provide punct-abstract-render%)
+(provide punct-abstract-render%
+         rules
+         define-rules)
 
 (define punct-abstract-render%
   (class object%
@@ -77,3 +82,68 @@
     
     (super-new)))
 
+
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; Rules shorthand
+
+(begin-for-syntax
+  ;; One attribute in a clause head: `id` must be present; `[id default]` need not be
+  (define-syntax-class attr-spec
+    #:attributes (pat)
+    (pattern id:id
+             #:with pat #'['id id])
+    (pattern [id:id default:expr]
+             #:with pat #'['id id #:default default]))
+
+  (define-syntax-class clause-head
+    #:attributes (tag-pat attrs-pat)
+    #:literals (or)
+    (pattern (or tag:id ...+)
+             #:with tag-pat #'(or 'tag ...)
+             #:with attrs-pat #'_)
+    (pattern (tag:id attr:attr-spec ...)
+             #:with tag-pat #''tag
+             #:with attrs-pat #'(app attrs->hash (hash* attr.pat ...)))
+    (pattern tag:id
+             #:with tag-pat #''tag
+             #:with attrs-pat #'_))
+
+  ;; aside.note.wide → (values 'aside "note wide")
+  (define (split-tag-id id-stx)
+    (define parts (string-split (symbol->string (syntax-e id-stx)) "." #:trim? #f))
+    (define tag (car parts))
+    (define classes (cdr parts))
+    (when (or (string=? tag "") (member "" classes))
+      (raise-syntax-error #f "expected a tag name, optionally followed by .class names" id-stx))
+    (values (string->symbol tag) (and (pair? classes) (string-join classes " ")))))
+
+(define-syntax (rules stx)
+  (syntax-parse stx
+    #:literals (else)
+    [(_ (tag-id:id attrs-id:id elems-id:id)
+        #:default default-expr:expr
+        (~and clause [(~not else) . _]) ...
+        (~optional [else else-body:expr ...+]))
+     (define (clause->match-clause c)
+       (syntax-parse c
+         [[head:clause-head (~optional (~seq #:when guard:expr)) #:as new-id:id]
+          (define-values (tag class) (split-tag-id #'new-id))
+          (with-syntax ([new-tag tag]
+                        [attrs (if class #`'((class #,class)) #''())])
+            #'[(head.tag-pat head.attrs-pat)
+               (~? (~@ #:when guard))
+               (default 'new-tag attrs elems-id)])]
+         [[head:clause-head (~optional (~seq #:when guard:expr)) body:expr ...+]
+          #'[(head.tag-pat head.attrs-pat) (~? (~@ #:when guard)) (let () body ...)]]))
+     (with-syntax ([(match-clause ...) (map clause->match-clause (attribute clause))])
+       #'(let ([default default-expr])
+           (λ (tag-id attrs-id elems-id)
+             (match* (tag-id attrs-id)
+               match-clause ...
+               [(_ _) (~? (let () else-body ...)
+                          (default tag-id attrs-id elems-id))]))))]))
+
+(define-syntax (define-rules stx)
+  (syntax-parse stx
+    [(_ (name:id tag-id:id attrs-id:id elems-id:id) clause ...)
+     #'(define name (rules (tag-id attrs-id elems-id) clause ...))]))

@@ -87,40 +87,37 @@ Here's a simplistic example that renders a Punct document to a standalone HTML f
 @subsection{Handling custom elements in HTML}
 
 When your Punct document contains @tech{custom elements}, you need to tell the HTML renderer how to
-convert them. Provide a @tech{fallback function} as the second argument to @racket[doc->html]:
+convert them. Provide a @tech{rules function} as the second argument to @racket[doc->html]:
 
 @codeblock|{
 #lang racket
 
 (require punct/fetch
-         punct/render/html
-         racket/match)
+         punct/render/html)
 
-;; Define how to render custom elements
-(define (my-html-fallback tag attrs elems)
-  (match (list tag attrs)
-    ;; Convert 'abbreviation to HTML <abbr>
-    [`(abbreviation [[term ,term]])
-     `(abbr [[title ,term]] ,@elems)]
+;; Define how to render custom elements. Any other element goes to default-html-tag.
+(define-html-rules (my-html-rules tag attrs elems)
+  ;; Convert 'abbreviation to HTML <abbr>, using its term attribute
+  [(abbreviation term)
+   `(abbr [[title ,term]] ,@elems)]
 
-    ;; Convert 'note to a styled div
-    [`(note ,_)
-     `(div [[class "note"]] ,@elems)]
+  ;; Convert 'note to <div class="note">
+  [note #:as div.note]
 
-    ;; Convert 'youtube to an iframe
-    [`(youtube [[id ,video-id]])
-     `(iframe [[src ,(string-append "https://www.youtube.com/embed/" video-id)]
-               [width "560"]
-               [height "315"]
-               [frameborder "0"]
-               [allowfullscreen ""]])]
-
-    ;; Fall through to default behavior for anything else
-    [_ (default-html-tag tag attrs elems)]))
+  ;; Convert 'youtube to an iframe
+  [(youtube id)
+   `(iframe [[src ,(string-append "https://www.youtube.com/embed/" id)]
+             [width "560"]
+             [height "315"]
+             [frameborder "0"]
+             [allowfullscreen ""]])])
 
 (define (render-with-custom-elements source-path)
-  (doc->html (get-doc source-path) my-html-fallback))
+  (doc->html (get-doc source-path) my-html-rules))
 }|
+
+See @racket[rules] for the full syntax. A rules function is an ordinary function, so you can also
+write one yourself, for example with @racket[match].
 
 @section{Rendering to Typst}
 
@@ -175,40 +172,40 @@ Here's a complete workflow for rendering Punct documents to PDF via Typst:
 
 @subsection{Handling custom elements in Typst}
 
-Just as with HTML, you can provide a @tech{fallback function} for custom elements:
+Just as with HTML, you can provide a @tech{rules function} for custom elements:
 
 @codeblock|{
 #lang racket
 
 (require punct/fetch
-         punct/render/typst
-         racket/match)
+         punct/render/typst)
 
-(define (my-typst-fallback tag attrs elems)
-  (match (list tag attrs)
-    ;; Render 'note as a Typst callout box
-    [`(note ,_)
-     (string-append "#block(fill: luma(230), inset: 1em, radius: 4pt)[\n"
-                    (string-join elems)
-                    "\n]")]
+;; Any other element goes to default-typst-tag.
+(define-typst-rules (my-typst-rules tag attrs elems)
+  ;; Render 'note as a Typst callout box
+  [note
+   (string-append "#block(fill: luma(230), inset: 1em, radius: 4pt)[\n"
+                  (string-join elems)
+                  "\n]")]
 
-    ;; Render 'abbreviation with a tooltip (using Typst's tooltip package)
-    [`(abbreviation [[term ,term]])
-     (string-append "#underline[" (string-join elems) "]")]
+  ;; Render 'abbreviation with an underline
+  [(abbreviation term)
+   (string-append "#underline[" (string-join elems) "]")]
 
-    ;; Fall through to default
-    [_ (default-typst-tag tag attrs elems)]))
+  ;; Render 'margin-note by calling the Typst function aside
+  [margin-note #:as aside])
 
 (define (render-typst-with-custom source-path)
-  (doc->typst (get-doc source-path) my-typst-fallback))
+  (doc->typst (get-doc source-path) my-typst-rules))
 }|
 
-Note that in Typst fallbacks, the @racket[elems] have already been escaped and rendered to strings,
-so you typically join them with @racket[string-join] or @racket[string-append].
+Note that in Typst rules, the @racket[elems] have already been escaped and rendered to strings,
+so you typically join them with @racket[string-join] or @racket[string-append]. Attribute values
+are not escaped: use @racket[escape-typst-string] or @racket[escape-typst-text] on them.
 
-@subsection{Using the default Typst fallback}
+@subsection{Using the default Typst rules}
 
-The default @tech{fallback function} (@racket[default-typst-tag]) converts custom elements directly
+The default @tech{rules function} (@racket[default-typst-tag]) converts custom elements directly
 to Typst function calls. For example, a custom element like @racket['(note "Important!")] becomes
 @tt{#note[Important!]} in the output. Attributes become named arguments: @racket['(note [[class "info"]] "Text")]
 becomes @tt{#note(class: "info")[Text]}.
@@ -275,7 +272,7 @@ calling the @tt{note} function defined in the Typst preamble with the appropriat
 
 @section[#:tag "extending-renderer"]{Extending the Renderer}
 
-Sometimes providing a @tech{fallback function} isn't enough. You might need to:
+Sometimes providing a @tech{rules function} isn't enough. You might need to:
 
 @itemlist[#:style 'compact
 @item{Change how standard elements (like headings or links) are rendered}
@@ -312,8 +309,8 @@ the HTML renderer to add automatic IDs to headings:
                    (regexp-replace* #rx"[^a-zA-Z0-9]+" text "-")))
       `(,tag [[id ,id]] ,@elems))))
 
-(define (doc->html-with-ids doc [fallback default-html-tag])
-  (send (new punct-html-with-ids% [doc doc] [render-fallback fallback])
+(define (doc->html-with-ids doc [rules default-html-tag])
+  (send (new punct-html-with-ids% [doc doc] [render-fallback rules])
         render-document))
 }|
 
@@ -407,8 +404,8 @@ abstract methods. Here's a minimal example that renders to a simple Markdown-lik
                      (if (null? footnotes) "" "\n")
                      (string-append* footnotes)))))
 
-(define (doc->simple-markdown doc [fallback (lambda (t a e) (string-append* e))])
-  (send (new punct-simple-markdown% [doc doc] [render-fallback fallback])
+(define (doc->simple-markdown doc [rules (lambda (t a e) (string-append* e))])
+  (send (new punct-simple-markdown% [doc doc] [render-fallback rules])
         render-document))
 }|
 

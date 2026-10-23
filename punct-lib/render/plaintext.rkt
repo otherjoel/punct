@@ -128,5 +128,5 @@
   (λ (tag attrs elems)
     (wrap-text (cons (format "[~a] " tag) elems) width)))
 
-(define (doc->plaintext doc width [fallback (make-plaintext-fallback width)])
-  (send (new punct-plaintext-render% [doc doc] [line-width width] [render-fallback fallback]) render-document))
+(define (doc->plaintext doc width [rules (make-plaintext-fallback width)])
+  (send (new punct-plaintext-render% [doc doc] [line-width width] [render-fallback rules]) render-document))
